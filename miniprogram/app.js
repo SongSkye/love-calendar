@@ -140,7 +140,20 @@ App({
       if (res.data.length > 0) {
         return app.setupUserState(res.data[0]);
       }
-      return false;
+      // 兜底：UUID 丢失（清缓存/重装小程序），利用数据库"仅创建者可读写"权限
+      // 不加 where 条件查询时，系统自动按 _openid 过滤，只返回当前用户创建的记录
+      return app.getDb().collection('users').get().then(function (fallbackRes) {
+        if (fallbackRes.data.length > 0) {
+          var user = fallbackRes.data[0];
+          console.log('通过权限兜底找回用户记录，更新 UUID');
+          // 把当前 UUID 写回记录，确保下次能正常匹配
+          app.getDb().collection('users').doc(user._id).update({
+            data: { uid: uid }
+          }).catch(function () {});
+          return app.setupUserState(user);
+        }
+        return false;
+      });
     }).catch(function (err) {
       console.error('检查绑定状态失败:', err);
       return false;

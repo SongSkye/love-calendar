@@ -14,11 +14,6 @@ Page({
   },
 
   onShow() {
-    if (!app.globalData.openidReady) {
-      var that = this;
-      setTimeout(function () { that.onShow(); }, 300);
-      return;
-    }
     if (!app.globalData.isBound) {
       app.checkBindStatus().then(function (bound) {
         if (!bound) { wx.reLaunch({ url: '/pages/welcome/welcome' }); }
@@ -30,13 +25,16 @@ Page({
 
   async loadUserInfo() {
     var db = app.getDb();
-    var openid = app.globalData.openid;
+    var userId = app.getUserId();  // openid 或 UUID（云函数不可用时兜底）
     var coupleId = app.globalData.coupleId;
 
     try {
-      // 用 openid 查询当前用户
+      // 用 userId 查询当前用户（兼容 openid 和 UUID 两种模式）
       var user = null;
-      var userRes = await db.collection('users').where({ openid: openid }).get();
+      var userRes = await db.collection('users').where({ uid: userId }).get();
+      if (userRes.data.length === 0) {
+        userRes = await db.collection('users').where({ openid: userId }).get();
+      }
       if (userRes.data.length > 0) {
         user = userRes.data[0];
         this.setData({ userInfo: user });
@@ -53,7 +51,7 @@ Page({
       var partner = null;
       for (var i = 0; i < partnerRes.data.length; i++) {
         var u = partnerRes.data[i];
-        var isMe = (u.openid && u.openid === openid) || (user.uid && u.uid && u.uid === user.uid);
+        var isMe = (u.openid && u.openid === userId) || (u.uid && u.uid === userId) || (user._id === u._id);
         if (!isMe) { partner = u; break; }
       }
       if (partner) {

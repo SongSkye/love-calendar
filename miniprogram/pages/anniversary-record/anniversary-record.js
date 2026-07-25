@@ -207,7 +207,7 @@ Page({
     this.setData({ saving: true });
     const db = app.getDb();
     const coupleId = app.globalData.coupleId;
-    const uid = app.globalData.openid;
+    const uid = app.getUserId();     // openid 或 UUID（云函数不可用时兜底）
     const now = new Date().toISOString();
 
     try {

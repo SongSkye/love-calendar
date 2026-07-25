@@ -83,15 +83,9 @@ Page({
       return;
     }
 
-    // 确保 openid 已获取，否则无法正确绑定数据
-    if (!app.globalData.openid) {
-      wx.showToast({ title: '正在初始化，请稍后再试', icon: 'none' });
-      return;
-    }
-
     this.setData({ loading: true });
     var db = app.getDb();
-    var openid = app.globalData.openid;
+    var userId = app.getUserId();  // openid 或 UUID（云函数不可用时兜底）
 
     try {
       // 检查是否已有空间
@@ -109,7 +103,7 @@ Page({
       var coupleRes = await db.collection('couples').add({
         data: {
           inviteCode: inviteCode,
-          creatorOpenid: openid,
+          creatorOpenid: userId,
           partnerOpenid: '',
           createdAt: new Date().toISOString(),
         }
@@ -118,7 +112,8 @@ Page({
       // 创建用户记录
       await db.collection('users').add({
         data: {
-          openid: openid,
+          openid: userId,
+          uid: userId,  // 同时写 uid 字段，兼容 UUID 模式
           coupleId: coupleRes._id,
           nickname: nickname,
           role: 'creator',
@@ -129,7 +124,7 @@ Page({
 
       // 更新全局状态
       app.globalData.userInfo = {
-        openid: openid, coupleId: coupleRes._id, nickname: nickname, role: 'creator'
+        openid: userId, coupleId: coupleRes._id, nickname: nickname, role: 'creator'
       };
       app.globalData.coupleId = coupleRes._id;
       app.globalData.isBound = true;
@@ -161,15 +156,9 @@ Page({
       return;
     }
 
-    // 确保 openid 已获取，否则无法正确绑定数据
-    if (!app.globalData.openid) {
-      wx.showToast({ title: '正在初始化，请稍后再试', icon: 'none' });
-      return;
-    }
-
     this.setData({ loading: true });
     var db = app.getDb();
-    var openid = app.globalData.openid;
+    var userId = app.getUserId();  // openid 或 UUID（云函数不可用时兜底）
 
     try {
       // 检查是否已有空间
@@ -197,7 +186,7 @@ Page({
       }
       // 不能加入自己创建的空间（兼容新旧字段）
       var creatorId = couple.creatorOpenid || couple.creatorUid;
-      if (creatorId === openid) {
+      if (creatorId === userId) {
         wx.showToast({ title: '不能加入自己创建的空间', icon: 'none' });
         this.setData({ loading: false });
         return;
@@ -205,13 +194,14 @@ Page({
 
       // 更新空间
       await db.collection('couples').doc(couple._id).update({
-        data: { partnerOpenid: openid }
+        data: { partnerOpenid: userId }
       });
 
       // 创建用户记录
       await db.collection('users').add({
         data: {
-          openid: openid,
+          openid: userId,
+          uid: userId,  // 同时写 uid 字段，兼容 UUID 模式
           coupleId: couple._id,
           nickname: nickname,
           role: 'partner',
@@ -222,7 +212,7 @@ Page({
 
       // 更新全局状态
       app.globalData.userInfo = {
-        openid: openid, coupleId: couple._id, nickname: nickname, role: 'partner'
+        openid: userId, coupleId: couple._id, nickname: nickname, role: 'partner'
       };
       app.globalData.coupleId = couple._id;
       app.globalData.isBound = true;
