@@ -1,0 +1,9 @@
+{
+  "name": "anniversary",
+  "version": "1.0.0",
+  "description": "纪念日云函数：CRUD操作",
+  "main": "index.js",
+  "dependencies": {
+    "wx-server-sdk": "latest"
+  }
+}

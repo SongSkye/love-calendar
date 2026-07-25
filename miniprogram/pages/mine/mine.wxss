@@ -1,0 +1,269 @@
+/* 我的页面样式 */
+.mine-page {
+  min-height: 100vh;
+  background: #FFF5F6;
+}
+
+/* 头部 */
+.mine-header {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  padding: 60rpx 30rpx 50rpx;
+  text-align: center;
+  color: #FFFFFF;
+}
+
+.mine-avatar-wrap {
+  width: 140rpx;
+  height: 140rpx;
+  border-radius: 50%;
+  margin: 0 auto 20rpx;
+  position: relative;
+  border: 4rpx solid rgba(255,255,255,0.5);
+  overflow: hidden;
+}
+
+.mine-avatar-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.mine-avatar-default {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 70rpx;
+  background: rgba(255,255,255,0.15);
+}
+
+.avatar-edit-icon {
+  position: absolute;
+  bottom: 0;
+  right: 0;
+  width: 44rpx;
+  height: 44rpx;
+  background: rgba(0,0,0,0.4);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 24rpx;
+}
+
+.mine-nickname-row {
+  display: inline-flex;
+  align-items: center;
+  margin-bottom: 8rpx;
+}
+
+.mine-nickname {
+  font-size: 36rpx;
+  font-weight: bold;
+}
+
+.nickname-edit-icon {
+  font-size: 28rpx;
+  margin-left: 10rpx;
+  opacity: 0.7;
+}
+
+.mine-role {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+/* 区块 */
+.section {
+  padding: 30rpx 20rpx 0;
+}
+
+.section-title {
+  font-size: 26rpx;
+  color: #999;
+  margin-bottom: 16rpx;
+  padding-left: 10rpx;
+}
+
+/* 对方卡片 */
+.partner-card {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+}
+
+.partner-card.waiting {
+  opacity: 0.7;
+}
+
+.partner-avatar-img {
+  width: 80rpx;
+  height: 80rpx;
+  border-radius: 50%;
+  margin-right: 24rpx;
+  object-fit: cover;
+}
+
+.partner-avatar-default {
+  font-size: 56rpx;
+  margin-right: 24rpx;
+}
+
+.partner-info {
+  flex: 1;
+}
+
+.partner-name {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333;
+  margin-bottom: 4rpx;
+}
+
+.partner-status {
+  font-size: 24rpx;
+  color: #FF6B81;
+}
+
+/* 邀请码 */
+.invite-card {
+  padding: 30rpx;
+}
+
+.invite-code-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.invite-code-show {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #FF6B81;
+  letter-spacing: 12rpx;
+}
+
+.invite-copy-btn {
+  background: #FFF5F6;
+  color: #FF6B81;
+  font-size: 24rpx;
+  padding: 10rpx 24rpx;
+  border-radius: 50rpx;
+}
+
+.invite-tip {
+  font-size: 24rpx;
+  color: #999;
+}
+
+/* 菜单 */
+.menu-list {
+  padding: 0;
+}
+
+.menu-item {
+  display: flex;
+  align-items: center;
+  padding: 30rpx;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.menu-item:last-child {
+  border-bottom: none;
+}
+
+.menu-icon {
+  font-size: 36rpx;
+  margin-right: 20rpx;
+}
+
+.menu-text {
+  flex: 1;
+  font-size: 28rpx;
+  color: #333;
+}
+
+.menu-arrow {
+  font-size: 32rpx;
+  color: #CCC;
+}
+
+/* 解绑 */
+.unbind-section {
+  padding: 60rpx 40rpx;
+  text-align: center;
+}
+
+.btn-unbind {
+  background: #FFFFFF;
+  color: #FF6B81;
+  border: 2rpx solid #FF6B81;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  padding: 20rpx 0;
+  margin-bottom: 16rpx;
+}
+
+.unbind-warning {
+  font-size: 22rpx;
+  color: #CCC;
+}
+
+/* 弹窗 */
+.modal-mask {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.modal-box {
+  background: #FFF;
+  border-radius: 20rpx;
+  padding: 40rpx;
+  width: 560rpx;
+}
+
+.modal-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  text-align: center;
+  margin-bottom: 30rpx;
+  color: #333;
+}
+
+.modal-input {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  margin-bottom: 30rpx;
+}
+
+.modal-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.modal-btn {
+  flex: 1;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  padding: 18rpx 0;
+  border: none;
+}
+
+.modal-btn.cancel {
+  background: #F5F5F5;
+  color: #999;
+}
+
+.modal-btn.confirm {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFF;
+}

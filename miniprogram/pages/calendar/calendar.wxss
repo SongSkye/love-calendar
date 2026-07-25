@@ -1,0 +1,419 @@
+/* 日历页样式 */
+.calendar-page {
+  padding: 20rpx;
+  padding-bottom: 40rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+}
+
+/* ===== 头部信息卡片 ===== */
+.header-card {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 36rpx 30rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 8rpx 30rpx rgba(255, 107, 129, 0.25);
+}
+
+.header-left {
+  display: flex;
+  flex-direction: column;
+}
+
+.together-days {
+  display: flex;
+  align-items: baseline;
+}
+
+.days-number {
+  font-size: 72rpx;
+  font-weight: bold;
+}
+
+.days-unit {
+  font-size: 28rpx;
+  margin-left: 8rpx;
+  opacity: 0.9;
+}
+
+.together-label {
+  font-size: 24rpx;
+  opacity: 0.85;
+  margin-top: 4rpx;
+}
+
+.header-right {
+  text-align: right;
+}
+
+.next-label {
+  font-size: 22rpx;
+  opacity: 0.85;
+  display: block;
+}
+
+.next-countdown {
+  font-size: 40rpx;
+  font-weight: bold;
+}
+
+.no-anniversary {
+  font-size: 24rpx;
+  opacity: 0.8;
+}
+
+/* ===== 月历容器 ===== */
+.calendar-container {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 24rpx 16rpx;
+  box-shadow: 0 4rpx 20rpx rgba(255, 107, 129, 0.08);
+}
+
+/* 月份切换 */
+.month-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10rpx 16rpx 20rpx;
+}
+
+.month-arrow {
+  font-size: 28rpx;
+  color: #FF6B81;
+  padding: 12rpx 20rpx;
+}
+
+.month-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+/* 星期标题 */
+.weekday-row {
+  display: flex;
+  margin-bottom: 8rpx;
+}
+
+.weekday-item {
+  flex: 1;
+  text-align: center;
+  font-size: 24rpx;
+  color: #999999;
+  padding: 10rpx 0;
+}
+
+/* 日期格子 */
+.date-grid {
+  display: flex;
+  flex-wrap: wrap;
+}
+
+.date-cell {
+  width: calc(100% / 7);
+  min-height: 90rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 6rpx 0;
+  box-sizing: border-box;
+}
+
+.date-cell.empty {
+  background: transparent;
+}
+
+.date-num {
+  font-size: 26rpx;
+  color: #333333;
+  margin-bottom: 4rpx;
+}
+
+.date-cell.today .date-num {
+  background: #FF6B81;
+  color: #FFFFFF;
+  width: 44rpx;
+  height: 44rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+}
+
+/* 心情表情行 */
+.mood-row {
+  display: flex;
+  gap: 4rpx;
+  margin-top: 2rpx;
+}
+
+.mood-emoji-small {
+  font-size: 22rpx;
+}
+
+/* 有照片的小圆点 */
+.has-photo-dot {
+  width: 8rpx;
+  height: 8rpx;
+  border-radius: 50%;
+  background: #FF6B81;
+  position: absolute;
+  bottom: 4rpx;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+/* ===== 今日心情入口 ===== */
+.today-mood-entry {
+  margin-top: 20rpx;
+}
+
+.today-mood-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  border: 2rpx dashed #FF6B81;
+}
+
+.today-icon {
+  font-size: 36rpx;
+  margin-right: 12rpx;
+}
+
+.today-text {
+  font-size: 28rpx;
+  color: #FF6B81;
+}
+
+/* ===== 心情弹窗 ===== */
+.mood-popup-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.mood-popup {
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.popup-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.popup-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.popup-close {
+  font-size: 32rpx;
+  color: #999999;
+  padding: 10rpx;
+}
+
+/* 心情选择器 */
+.mood-selector {
+  display: flex;
+  justify-content: space-around;
+  padding: 20rpx 0;
+  margin-bottom: 20rpx;
+}
+
+.mood-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 16rpx;
+  border-radius: 20rpx;
+  transition: all 0.3s;
+}
+
+.mood-item.active {
+  background: #FFF5F6;
+  transform: scale(1.12);
+}
+
+.mood-emoji {
+  font-size: 56rpx;
+  margin-bottom: 6rpx;
+}
+
+.mood-label {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+/* 备注输入 */
+.form-group {
+  margin-bottom: 20rpx;
+}
+
+.mood-note {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 120rpx;
+}
+
+/* 图片区域 */
+.image-section {
+  margin-bottom: 20rpx;
+}
+
+.section-label {
+  font-size: 26rpx;
+  color: #666666;
+  margin-bottom: 12rpx;
+}
+
+.image-upload-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.image-upload-item {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.image-upload-item image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-upload-item .delete-btn {
+  position: absolute;
+  top: 4rpx;
+  right: 4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 22rpx;
+}
+
+.image-add-btn {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  border: 2rpx dashed #FF6B81;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #FF6B81;
+  font-size: 22rpx;
+  background: #FFF5F6;
+}
+
+.image-add-btn .add-icon {
+  font-size: 40rpx;
+  margin-bottom: 4rpx;
+}
+
+/* 保存按钮 */
+.btn-save-mood {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFFFFF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  padding: 22rpx 0;
+  border: none;
+  margin-top: 20rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
+}
+
+/* ===== 心情详情弹窗 ===== */
+.mood-detail-item {
+  padding: 24rpx 0;
+  border-bottom: 1rpx solid #F5F5F5;
+}
+
+.mood-detail-item:last-child {
+  border-bottom: none;
+}
+
+.mood-detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12rpx;
+}
+
+.mood-detail-nickname {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.mood-detail-emoji {
+  font-size: 28rpx;
+}
+
+.mood-detail-note {
+  font-size: 26rpx;
+  color: #666666;
+  margin-bottom: 12rpx;
+  line-height: 1.6;
+}
+
+.mood-detail-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.mood-detail-image {
+  width: 180rpx;
+  height: 180rpx;
+  border-radius: 12rpx;
+  object-fit: cover;
+}
+
+.mood-detail-edit {
+  text-align: right;
+  color: #FF6B81;
+  font-size: 24rpx;
+  padding: 8rpx 0;
+}

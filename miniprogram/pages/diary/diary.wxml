@@ -1,0 +1,114 @@
+<!--
+  日记列表页 - 第二个Tab
+  时间线展示两人日记，支持查看详情和删除
+-->
+<view class="diary-page">
+  <!-- 搜索栏 -->
+  <view class="search-bar">
+    <view class="search-input-wrap">
+      <text class="search-icon">🔍</text>
+      <input
+        class="search-input"
+        placeholder="搜索日记标题或内容..."
+        value="{{keyword}}"
+        bindinput="onSearchInput"
+        confirm-type="search"
+      />
+      <text class="search-clear" wx:if="{{keyword}}" bindtap="clearSearch">✕</text>
+    </view>
+  </view>
+
+  <!-- 日记列表 -->
+  <scroll-view
+    class="diary-list"
+    scroll-y
+    bindscrolltolower="loadMore"
+    lower-threshold="100"
+  >
+    <!-- 空状态 -->
+    <view class="empty-state" wx:if="{{diaries.length === 0 && !loading}}">
+      <view class="empty-icon">📝</view>
+      <view class="empty-text">还没有日记，写下第一篇吧</view>
+    </view>
+
+    <!-- 日记条目 -->
+    <view
+      class="diary-item"
+      wx:for="{{diaries}}"
+      wx:key="_id"
+      bindtap="viewDetail"
+      data-id="{{item._id}}"
+    >
+      <view class="diary-header">
+        <view class="diary-author">
+          <text class="tag {{item.role === 'creator' ? 'tag-me' : 'tag-partner'}}">
+            {{item.nickname}}
+          </text>
+        </view>
+        <view class="diary-date">{{item.date}}</view>
+      </view>
+      <view class="diary-title" wx:if="{{item.title}}">{{item.title}}</view>
+      <view class="diary-content">{{item.content}}</view>
+      <!-- 图片缩略图 -->
+      <view class="diary-images" wx:if="{{item.images && item.images.length > 0}}">
+        <image
+          wx:for="{{item.images}}"
+          wx:for-item="img"
+          wx:key="index"
+          src="{{img}}"
+          mode="aspectFill"
+          class="diary-image"
+        ></image>
+      </view>
+      <view class="diary-footer">
+        <view class="diary-time">{{item.createdAt}}</view>
+        <view class="diary-actions" wx:if="{{item.isMine}}" catchtap="noop">
+          <text class="action-btn" bindtap="editDiary" data-id="{{item._id}}">编辑</text>
+          <text class="action-btn delete" bindtap="deleteDiary" data-id="{{item._id}}">删除</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加载更多 -->
+    <view class="loading-more" wx:if="{{loading}}">加载中...</view>
+    <view class="loading-more" wx:if="{{!hasMore && diaries.length > 0}}">— 没有更多了 —</view>
+  </scroll-view>
+
+  <!-- 浮动按钮 -->
+  <view class="fab" bindtap="addDiary">+</view>
+</view>
+
+<!-- 日记详情弹窗 -->
+<view class="detail-mask" wx:if="{{showDetail}}" bindtap="closeDetail">
+  <view class="detail-popup" catchtap="noop">
+    <view class="detail-header">
+      <text class="detail-title">{{detailDiary.title || '日记详情'}}</text>
+      <view class="detail-close" bindtap="closeDetail">✕</view>
+    </view>
+    <view class="detail-meta">
+      <text class="tag {{detailDiary.role === 'creator' ? 'tag-me' : 'tag-partner'}}">
+        {{detailDiary.nickname}}
+      </text>
+      <text class="detail-date">{{detailDiary.date}}</text>
+    </view>
+    <view class="detail-content">{{detailDiary.content}}</view>
+    <!-- 大图浏览 -->
+    <view class="detail-images" wx:if="{{detailDiary.images && detailDiary.images.length > 0}}">
+      <image
+        wx:for="{{detailDiary.images}}"
+        wx:for-item="img"
+        wx:key="index"
+        src="{{img}}"
+        mode="widthFix"
+        class="detail-image"
+        bindtap="previewImage"
+        data-url="{{img}}"
+        data-urls="{{detailDiary.images}}"
+      ></image>
+    </view>
+    <view class="detail-actions" wx:if="{{detailDiary.isMine}}">
+      <button class="btn-edit" bindtap="editDiaryFromDetail">编辑</button>
+      <button class="btn-delete" bindtap="deleteDiaryFromDetail">删除</button>
+    </view>
+  </view>
+</view>

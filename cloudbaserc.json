@@ -1,0 +1,12 @@
+{
+  "envId": "cloudbase-d2gr49l7r2f948ed1",
+  "functionRoot": "cloudfunctions",
+  "functions": [
+    { "name": "getOpenid", "runtime": "Nodejs16.13" },
+    { "name": "auth", "runtime": "Nodejs16.13" },
+    { "name": "mood", "runtime": "Nodejs16.13" },
+    { "name": "diary", "runtime": "Nodejs16.13" },
+    { "name": "anniversary", "runtime": "Nodejs16.13" },
+    { "name": "user", "runtime": "Nodejs16.13" }
+  ]
+}

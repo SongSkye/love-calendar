@@ -1,0 +1,45 @@
+<!-- 纪念日列表页 - 带封面图 -->
+<view class="anniversary-page">
+  <view class="anniversary-list">
+    <view class="empty-state" wx:if="{{anniversaries.length === 0 && !loading}}">
+      <view class="empty-icon">💝</view>
+      <view class="empty-text">还没有纪念日</view>
+      <view class="empty-sub">添加属于你们的纪念日吧</view>
+    </view>
+
+    <view
+      class="anniversary-card {{item.type}}"
+      wx:for="{{anniversaries}}"
+      wx:key="_id"
+      bindtap="goDetail"
+      data-id="{{item._id}}"
+    >
+      <!-- 封面图区域 -->
+      <view class="card-cover">
+        <image wx:if="{{item.coverImage}}" src="{{item.coverImage}}" mode="aspectFill" class="cover-img"></image>
+        <view wx:else class="cover-default">
+          <text class="cover-icon">{{item.type === 'together' ? '💕' : (item.type === 'birthday' ? '🎂' : '📌')}}</text>
+        </view>
+      </view>
+
+      <view class="card-body">
+        <view class="card-left">
+          <view class="card-title">{{item.title}}</view>
+          <view class="card-date">📅 {{item.date}}</view>
+        </view>
+        <view class="card-right">
+          <view class="card-countdown" wx:if="{{item.isToday}}">
+            <text class="countdown-num">🎉</text>
+            <text class="countdown-label">就是今天！</text>
+          </view>
+          <view class="card-countdown" wx:else>
+            <text class="countdown-num">{{item.totalDays}}</text>
+            <text class="countdown-label">天</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <view class="fab" bindtap="addAnniversary">+</view>
+</view>

@@ -1,0 +1,243 @@
+/* 纪念日编辑/记录页样式 */
+.edit-page {
+  padding: 30rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #FFF5F6;
+  padding-bottom: 120rpx;
+}
+
+/* 封面 */
+.cover-section {
+  margin-bottom: 20rpx;
+}
+
+.cover-preview {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.06);
+}
+
+.cover-preview .cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #CCCCCC;
+  border: 2rpx dashed #E0E0E0;
+  border-radius: 20rpx;
+}
+
+.cover-placeholder-icon {
+  font-size: 60rpx;
+  margin-bottom: 12rpx;
+}
+
+.cover-placeholder-text {
+  font-size: 26rpx;
+}
+
+/* 表单卡片 */
+.form-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0,0,0,0.04);
+}
+
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+}
+
+.date-picker {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 类型选择 */
+.type-selector {
+  display: flex;
+  gap: 16rpx;
+}
+
+.type-item {
+  flex: 1;
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  border: 2rpx solid transparent;
+  transition: all 0.3s;
+}
+
+.type-item.active {
+  border-color: #FF6B81;
+  background: #FFE8EC;
+}
+
+.type-icon {
+  display: block;
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+
+.type-label {
+  font-size: 24rpx;
+  color: #666;
+}
+
+.type-item.active .type-label {
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+/* 内容输入 */
+.content-input {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  font-size: 28rpx;
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 200rpx;
+  line-height: 1.8;
+}
+
+/* 年份选择器 */
+.year-picker-row {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16rpx;
+  flex-wrap: wrap;
+}
+
+.year-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-right: 12rpx;
+}
+
+.year-picker-display {
+  display: flex;
+  align-items: center;
+  background: #FFE8EC;
+  border: 2rpx solid #FF6B81;
+  border-radius: 12rpx;
+  padding: 10rpx 20rpx;
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #FF6B81;
+}
+
+.year-arrow {
+  font-size: 20rpx;
+  margin-left: 10rpx;
+  color: #FF6B81;
+}
+
+.year-hint {
+  font-size: 22rpx;
+  color: #999;
+  margin-left: 12rpx;
+}
+
+.year-hint.new-record {
+  color: #FF6B81;
+}
+
+/* 图片上传 */
+.image-upload-area {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16rpx;
+}
+
+.image-upload-item {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  position: relative;
+  overflow: hidden;
+}
+
+.image-upload-item image {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.image-upload-item .delete-btn {
+  position: absolute;
+  top: 4rpx;
+  right: 4rpx;
+  width: 40rpx;
+  height: 40rpx;
+  background: rgba(0,0,0,0.5);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFF;
+  font-size: 22rpx;
+}
+
+.image-add-btn {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 12rpx;
+  border: 2rpx dashed #FF6B81;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #FF6B81;
+  font-size: 22rpx;
+  background: #FFF;
+}
+
+.image-add-btn .add-icon {
+  font-size: 40rpx;
+  margin-bottom: 4rpx;
+}
+
+/* 保存 */
+.save-area {
+  padding: 40rpx 0;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(255,107,129,0.3);
+}

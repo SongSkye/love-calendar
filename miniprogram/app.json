@@ -1,0 +1,53 @@
+{
+  "pages": [
+    "pages/welcome/welcome",
+    "pages/calendar/calendar",
+    "pages/diary/diary",
+    "pages/diary-edit/diary-edit",
+    "pages/anniversary/anniversary",
+    "pages/anniversary-detail/anniversary-detail",
+    "pages/anniversary-record/anniversary-record",
+    "pages/mine/mine"
+  ],
+  "window": {
+    "backgroundTextStyle": "light",
+    "navigationBarBackgroundColor": "#FF6B81",
+    "navigationBarTitleText": "恋爱日历",
+    "navigationBarTextStyle": "white",
+    "backgroundColor": "#FFF5F6"
+  },
+  "tabBar": {
+    "color": "#999999",
+    "selectedColor": "#FF6B81",
+    "backgroundColor": "#FFFFFF",
+    "borderStyle": "white",
+    "list": [
+      {
+        "pagePath": "pages/calendar/calendar",
+        "text": "日历",
+        "iconPath": "images/calendar.png",
+        "selectedIconPath": "images/calendar-active.png"
+      },
+      {
+        "pagePath": "pages/diary/diary",
+        "text": "日记",
+        "iconPath": "images/diary.png",
+        "selectedIconPath": "images/diary-active.png"
+      },
+      {
+        "pagePath": "pages/anniversary/anniversary",
+        "text": "纪念日",
+        "iconPath": "images/heart.png",
+        "selectedIconPath": "images/heart-active.png"
+      },
+      {
+        "pagePath": "pages/mine/mine",
+        "text": "我的",
+        "iconPath": "images/mine.png",
+        "selectedIconPath": "images/mine-active.png"
+      }
+    ]
+  },
+  "style": "v2",
+  "sitemapLocation": "sitemap.json"
+}

@@ -1,0 +1,89 @@
+/* 纪念日编辑页样式 */
+.edit-page {
+  padding: 30rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #FFF5F6;
+}
+
+.form-group {
+  margin-bottom: 30rpx;
+}
+
+.form-label {
+  font-size: 26rpx;
+  color: #666666;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  border: 2rpx solid transparent;
+}
+
+.form-input:focus {
+  border-color: #FF6B81;
+}
+
+.date-picker {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  color: #333333;
+}
+
+/* 类型选择 */
+.type-selector {
+  display: flex;
+  gap: 16rpx;
+}
+
+.type-item {
+  flex: 1;
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 24rpx 0;
+  text-align: center;
+  border: 2rpx solid transparent;
+  transition: all 0.3s;
+}
+
+.type-item.active {
+  border-color: #FF6B81;
+  background: #FFF5F6;
+}
+
+.type-icon {
+  display: block;
+  font-size: 40rpx;
+  margin-bottom: 8rpx;
+}
+
+.type-label {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+.type-item.active .type-label {
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+/* 保存按钮 */
+.save-area {
+  padding: 40rpx 0;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFFFFF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
+}

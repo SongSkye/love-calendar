@@ -1,0 +1,96 @@
+<!-- 纪念日详情页 - 历史今日 -->
+<view class="detail-page">
+  <!-- 加载中 -->
+  <view class="loading-box" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <block wx:if="{{!loading}}">
+    <!-- 顶部封面 -->
+    <view class="detail-cover">
+      <image wx:if="{{anniversary.coverImage}}" src="{{anniversary.coverImage}}" mode="aspectFill" class="cover-img"></image>
+      <view wx:else class="cover-default">
+        <text class="cover-icon">{{anniversary.type === 'together' ? '💕' : (anniversary.type === 'birthday' ? '🎂' : '📌')}}</text>
+      </view>
+      <view class="cover-info">
+        <view class="cover-title">{{anniversary.title}}</view>
+        <view class="cover-date">{{anniversary.date}}</view>
+      </view>
+    </view>
+
+    <!-- 天数 -->
+    <view class="countdown-card">
+      <view wx:if="{{anniversary.isToday}}">
+        <text class="countdown-big">🎉</text>
+        <text class="countdown-sub">就是今天！</text>
+      </view>
+      <view wx:else>
+        <text class="countdown-big">{{anniversary.totalDays}}</text>
+        <text class="countdown-unit">天</text>
+      </view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-row">
+      <view class="action-btn" bindtap="editAnniversary">
+        <text>✏️ 编辑</text>
+      </view>
+      <view class="action-btn" bindtap="recordToday">
+        <text>📝 记录今年</text>
+      </view>
+      <view class="action-btn" bindtap="deleteAnniversary">
+        <text>🗑 删除</text>
+      </view>
+    </view>
+
+    <!-- 年份记录概览：所有年份，点击可录入 -->
+    <view class="year-grid-section" wx:if="{{yearList.length > 0}}">
+      <view class="section-title">📅 年度记录</view>
+      <view class="year-grid">
+        <view
+          class="year-cell {{item.hasRecord ? 'has-record' : ''}}"
+          wx:for="{{yearList}}"
+          wx:key="year"
+          bindtap="recordYear"
+          data-year="{{item.year}}"
+        >
+          <text class="year-num">{{item.year}}</text>
+          <text class="year-status">{{item.hasRecord ? '✅' : '✏️'}}</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 历史今日 -->
+    <view class="history-section">
+      <view class="section-title">📜 历史今日</view>
+
+      <view class="empty-state" wx:if="{{records.length === 0}}">
+        <view class="empty-text">还没有记录</view>
+        <view class="empty-sub">点击上方年份格子或「记录今年」添加记录</view>
+      </view>
+
+      <view class="history-list">
+        <view class="history-item" wx:for="{{records}}" wx:key="_id">
+          <view class="history-year">{{item.year}}</view>
+          <view class="history-body">
+            <view class="history-content" wx:if="{{item.content}}">{{item.content}}</view>
+            <view class="history-images" wx:if="{{item.images && item.images.length > 0}}">
+              <image
+                wx:for="{{item.images}}"
+                wx:for-item="img"
+                wx:key="index"
+                src="{{img}}"
+                mode="aspectFill"
+                class="history-image"
+                bindtap="previewImage"
+                data-url="{{img}}"
+                data-urls="{{item.images}}"
+              ></image>
+            </view>
+            <view class="history-author">{{item.nickname}}</view>
+          </view>
+        </view>
+      </view>
+    </view>
+  </block>
+</view>

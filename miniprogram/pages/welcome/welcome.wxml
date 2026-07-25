@@ -1,0 +1,98 @@
+<!--
+  欢迎页 - 创建/加入情侣空间
+  使用微信 openid 作为唯一标识
+-->
+<view class="welcome-page">
+  <!-- 顶部品牌区域 -->
+  <view class="brand-area">
+    <view class="logo">💝</view>
+    <view class="app-name">恋爱日历</view>
+    <view class="app-desc">记录属于我们的每一天</view>
+  </view>
+
+  <!-- 操作区域 -->
+  <view class="action-area">
+    <!-- Tab切换 -->
+    <view class="tab-bar">
+      <view
+        class="tab-item {{activeTab === 'create' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="create"
+      >创建空间</view>
+      <view
+        class="tab-item {{activeTab === 'join' ? 'active' : ''}}"
+        bindtap="switchTab"
+        data-tab="join"
+      >加入空间</view>
+    </view>
+
+    <!-- 创建空间 -->
+    <view class="form-area" wx:if="{{activeTab === 'create'}}">
+      <view class="form-group">
+        <view class="form-label">你的昵称</view>
+        <input
+          class="form-input"
+          placeholder="比如：宝贝、老公、小可爱..."
+          value="{{nickname}}"
+          bindinput="onNicknameInput"
+          maxlength="10"
+        />
+      </view>
+
+      <button
+        class="btn-create"
+        bindtap="createSpace"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >💕 创建属于我们的空间</button>
+
+      <!-- 创建成功显示邀请码 -->
+      <view class="invite-result" wx:if="{{inviteCode}}">
+        <view class="invite-tip">将邀请码发给TA，一起加入吧！</view>
+        <view class="invite-code-box">
+          <text class="invite-code-text">{{inviteCode}}</text>
+        </view>
+        <view class="invite-actions">
+          <button class="btn-copy" bindtap="copyInviteCode">📋 复制邀请码</button>
+          <button class="btn-enter" bindtap="enterApp">💝 进入恋爱日历</button>
+        </view>
+      </view>
+    </view>
+
+    <!-- 加入空间 -->
+    <view class="form-area" wx:if="{{activeTab === 'join'}}">
+      <view class="form-group">
+        <view class="form-label">你的昵称</view>
+        <input
+          class="form-input"
+          placeholder="比如：宝贝、老公、小可爱..."
+          value="{{nickname}}"
+          bindinput="onNicknameInput"
+          maxlength="10"
+        />
+      </view>
+      <view class="form-group">
+        <view class="form-label">邀请码</view>
+        <input
+          class="form-input code-input"
+          placeholder="输入TA给你的6位邀请码"
+          value="{{inviteCodeInput}}"
+          bindinput="onInviteCodeInput"
+          maxlength="6"
+        />
+      </view>
+
+      <button
+        class="btn-create"
+        bindtap="joinSpace"
+        loading="{{loading}}"
+        disabled="{{loading}}"
+      >💕 加入TA的空间</button>
+    </view>
+  </view>
+
+  <!-- 底部说明 -->
+  <view class="footer-note">
+    创建空间后，双方的数据将互通共享 💞
+  </view>
+</view>

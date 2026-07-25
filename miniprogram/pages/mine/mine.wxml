@@ -1,0 +1,87 @@
+<!--
+  我的页面 - 头像、昵称修改、对方信息、邀请码、解绑
+-->
+<view class="mine-page">
+  <!-- 头部个人信息 -->
+  <view class="mine-header">
+    <view class="mine-avatar-wrap" bindtap="changeAvatar">
+      <image wx:if="{{userInfo.avatar}}" src="{{userInfo.avatar}}" mode="aspectFill" class="mine-avatar-img"></image>
+      <view wx:else class="mine-avatar-default">💕</view>
+      <view class="avatar-edit-icon">📷</view>
+    </view>
+
+    <view class="mine-nickname-row" bindtap="editNickname">
+      <text class="mine-nickname">{{userInfo.nickname}}</text>
+      <text class="nickname-edit-icon">✏️</text>
+    </view>
+
+    <view class="mine-role">{{userInfo.role === 'creator' ? '空间创建者' : '空间成员'}}</view>
+  </view>
+
+  <!-- 对方信息 -->
+  <view class="section">
+    <view class="section-title">💑 我的TA</view>
+    <view class="partner-card card" wx:if="{{partnerInfo}}">
+      <image wx:if="{{partnerInfo.avatar}}" src="{{partnerInfo.avatar}}" mode="aspectFill" class="partner-avatar-img"></image>
+      <view wx:else class="partner-avatar-default">💝</view>
+      <view class="partner-info">
+        <view class="partner-name">{{partnerInfo.nickname}}</view>
+        <view class="partner-status">已绑定</view>
+      </view>
+    </view>
+    <view class="partner-card card waiting" wx:else>
+      <view class="partner-avatar-default">❓</view>
+      <view class="partner-info">
+        <view class="partner-name">等待加入</view>
+        <view class="partner-status">将邀请码发给TA</view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 邀请码 -->
+  <view class="section">
+    <view class="section-title">🔗 邀请码</view>
+    <view class="invite-card card">
+      <view class="invite-code-row">
+        <view class="invite-code-show">{{inviteCode}}</view>
+        <view class="invite-copy-btn" bindtap="copyInviteCode">复制</view>
+      </view>
+      <view class="invite-tip">将邀请码发给TA，打开小程序即可加入</view>
+    </view>
+  </view>
+
+  <!-- 设置 -->
+  <view class="section">
+    <view class="section-title">⚙️ 设置</view>
+    <view class="menu-list card">
+      <view class="menu-item" bindtap="shareApp">
+        <text class="menu-icon">📤</text>
+        <text class="menu-text">分享给TA</text>
+        <text class="menu-arrow">›</text>
+      </view>
+      <view class="menu-item" bindtap="aboutApp">
+        <text class="menu-icon">ℹ️</text>
+        <text class="menu-text">关于恋爱日历</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 解绑 -->
+  <view class="unbind-section">
+    <button class="btn-unbind" bindtap="unbindSpace">解绑并退出空间</button>
+    <view class="unbind-warning">解绑后数据将无法恢复，请谨慎操作</view>
+  </view>
+</view>
+
+<!-- 修改昵称弹窗 -->
+<view class="modal-mask" wx:if="{{showNicknameModal}}" bindtap="closeNicknameModal">
+  <view class="modal-box" catchtap="noop">
+    <view class="modal-title">修改昵称</view>
+    <input class="modal-input" placeholder="输入新昵称" value="{{newNickname}}" bindinput="onNicknameInput" maxlength="10" />
+    <view class="modal-actions">
+      <button class="modal-btn cancel" bindtap="closeNicknameModal">取消</button>
+      <button class="modal-btn confirm" bindtap="saveNickname">保存</button>
+    </view>
+  </view>
+</view>

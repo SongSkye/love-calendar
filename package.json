@@ -1,0 +1,16 @@
+{
+  "name": "love-calendar",
+  "version": "1.0.0",
+  "description": "记录属于两个人的每一天：心情、日记、纪念日、照片。",
+  "main": "generate-icons.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "miniprogram-ci": "^2.1.31"
+  }
+}

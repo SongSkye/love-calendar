@@ -1,0 +1,266 @@
+/* 日记列表页样式 */
+.diary-page {
+  padding: 20rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  padding-bottom: 140rpx;
+}
+
+/* 搜索栏 */
+.search-bar {
+  margin-bottom: 20rpx;
+}
+
+.search-input-wrap {
+  display: flex;
+  align-items: center;
+  background: #FFFFFF;
+  border-radius: 50rpx;
+  padding: 0 24rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0,0,0,0.04);
+}
+
+.search-icon {
+  font-size: 28rpx;
+  margin-right: 12rpx;
+}
+
+.search-input {
+  flex: 1;
+  font-size: 26rpx;
+  padding: 20rpx 0;
+  background: transparent;
+}
+
+.search-clear {
+  font-size: 28rpx;
+  color: #999;
+  padding: 10rpx;
+}
+
+/* 日记条目 */
+.diary-item {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+  transition: transform 0.2s;
+}
+
+.diary-item:active {
+  transform: scale(0.98);
+}
+
+.diary-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16rpx;
+}
+
+.diary-author {
+  display: flex;
+  align-items: center;
+}
+
+.tag {
+  font-size: 20rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 8rpx;
+  color: #FFFFFF;
+}
+
+.tag-me {
+  background: #FF6B81;
+}
+
+.tag-partner {
+  background: #FFB347;
+}
+
+.diary-date {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.diary-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 10rpx;
+}
+
+.diary-content {
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.6;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 3;
+  overflow: hidden;
+  margin-bottom: 12rpx;
+}
+
+/* 图片缩略图 */
+.diary-images {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10rpx;
+  margin-bottom: 12rpx;
+}
+
+.diary-image {
+  width: 160rpx;
+  height: 160rpx;
+  border-radius: 10rpx;
+  object-fit: cover;
+}
+
+.diary-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F5F5F5;
+}
+
+.diary-time {
+  font-size: 22rpx;
+  color: #CCCCCC;
+}
+
+.diary-actions {
+  display: flex;
+  gap: 20rpx;
+}
+
+.action-btn {
+  font-size: 24rpx;
+  color: #FF6B81;
+  padding: 4rpx 8rpx;
+}
+
+.action-btn.delete {
+  color: #999999;
+}
+
+/* 浮动按钮 */
+.fab {
+  position: fixed;
+  right: 40rpx;
+  bottom: 120rpx;
+  width: 100rpx;
+  height: 100rpx;
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  font-size: 48rpx;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.4);
+  z-index: 100;
+}
+
+.fab:active {
+  transform: scale(0.9);
+}
+
+/* ===== 详情弹窗 ===== */
+.detail-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  display: flex;
+  align-items: flex-end;
+}
+
+.detail-popup {
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.detail-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20rpx;
+}
+
+.detail-title {
+  font-size: 32rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.detail-close {
+  font-size: 32rpx;
+  color: #999999;
+  padding: 10rpx;
+}
+
+.detail-meta {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 20rpx;
+}
+
+.detail-date {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.detail-content {
+  font-size: 28rpx;
+  color: #333333;
+  line-height: 1.8;
+  margin-bottom: 20rpx;
+  white-space: pre-wrap;
+}
+
+.detail-images {
+  margin-bottom: 20rpx;
+}
+
+.detail-image {
+  width: 100%;
+  border-radius: 12rpx;
+  margin-bottom: 12rpx;
+}
+
+.detail-actions {
+  display: flex;
+  gap: 20rpx;
+  margin-top: 20rpx;
+}
+
+.btn-edit {
+  flex: 1;
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFFFFF;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  padding: 18rpx 0;
+  border: none;
+}
+
+.btn-delete {
+  flex: 1;
+  background: #FFFFFF;
+  color: #999999;
+  border: 2rpx solid #E5E5E5;
+  border-radius: 50rpx;
+  font-size: 28rpx;
+  padding: 18rpx 0;
+}

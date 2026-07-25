@@ -1,0 +1,160 @@
+<!--
+  日历页 - 首页Tab
+  功能：月历展示两人心情、记录心情、顶部显示在一起天数
+-->
+<view class="calendar-page">
+  <!-- 头部信息卡片 -->
+  <view class="header-card">
+    <view class="header-left">
+      <view class="together-days">
+        <text class="days-number">{{togetherDays}}</text>
+        <text class="days-unit">天</text>
+      </view>
+      <view class="together-label">在一起</view>
+    </view>
+    <view class="header-right">
+      <view class="next-anniversary" wx:if="{{nextAnniversary}}">
+        <text class="next-label">距「{{nextAnniversary.title}}」</text>
+        <text class="next-countdown">{{nextAnniversary.countdownDays}}天</text>
+      </view>
+      <view class="no-anniversary" wx:else>
+        <text>添加纪念日吧 💝</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 月历 -->
+  <view class="calendar-container">
+    <!-- 月份切换 -->
+    <view class="month-header">
+      <view class="month-arrow" bindtap="prevMonth">◀</view>
+      <view class="month-title">{{currentYear}}年{{currentMonth}}月</view>
+      <view class="month-arrow" bindtap="nextMonth">▶</view>
+    </view>
+
+    <!-- 星期标题 -->
+    <view class="weekday-row">
+      <view class="weekday-item" wx:for="{{weekdays}}" wx:key="*this">{{item}}</view>
+    </view>
+
+    <!-- 日期格子 -->
+    <view class="date-grid">
+      <view
+        class="date-cell {{item.empty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}}"
+        wx:for="{{calendarGrid}}"
+        wx:key="index"
+        data-date="{{item.date}}"
+        data-empty="{{item.empty}}"
+        bindtap="onDateTap"
+      >
+        <view class="date-num" wx:if="{{!item.empty}}">{{item.day}}</view>
+        <!-- 心情表情 -->
+        <view class="mood-row" wx:if="{{!item.empty && moodMap[item.date]}}">
+          <text
+            class="mood-emoji-small"
+            wx:for="{{moodMap[item.date].users}}"
+            wx:key="uid"
+            wx:for-item="moodItem"
+          >{{moodItem.emoji}}</text>
+        </view>
+        <!-- 有照片的小圆点 -->
+        <view class="has-photo-dot" wx:if="{{!item.empty && moodMap[item.date] && moodMap[item.date].hasPhoto}}"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 今日心情快速入口 -->
+  <view class="today-mood-entry" wx:if="{{!hasTodayMood}}">
+    <view class="today-mood-card" bindtap="onDateTap" data-date="{{todayDate}}">
+      <text class="today-icon">📝</text>
+      <text class="today-text">记录今天的心情吧～</text>
+    </view>
+  </view>
+</view>
+
+<!-- 心情记录弹窗 -->
+<view class="mood-popup-mask" wx:if="{{showMoodPopup}}" bindtap="closeMoodPopup">
+  <view class="mood-popup" catchtap="noop">
+    <view class="popup-header">
+      <text class="popup-title">{{popupDate}} {{isEditing ? '修改心情' : '记录心情'}}</text>
+      <view class="popup-close" bindtap="closeMoodPopup">✕</view>
+    </view>
+
+    <!-- 心情选择 -->
+    <view class="mood-selector">
+      <view
+        class="mood-item {{selectedMood === item.key ? 'active' : ''}}"
+        wx:for="{{moodOptions}}"
+        wx:key="key"
+        data-mood="{{item.key}}"
+        bindtap="selectMood"
+      >
+        <text class="mood-emoji">{{item.emoji}}</text>
+        <text class="mood-label">{{item.label}}</text>
+      </view>
+    </view>
+
+    <!-- 备注 -->
+    <view class="form-group">
+      <textarea
+        class="mood-note"
+        placeholder="写点什么吧...（选填）"
+        value="{{moodNote}}"
+        bindinput="onMoodNoteInput"
+        maxlength="200"
+        auto-height
+      />
+    </view>
+
+    <!-- 图片上传 -->
+    <view class="image-section">
+      <view class="section-label">📷 日常照片（选填，最多9张）</view>
+      <view class="image-upload-area">
+        <block wx:for="{{moodImages}}" wx:key="index">
+          <view class="image-upload-item">
+            <image src="{{item}}" mode="aspectFill" bindtap="previewMoodImage" data-index="{{index}}"></image>
+            <view class="delete-btn" catchtap="deleteMoodImage" data-index="{{index}}">✕</view>
+          </view>
+        </block>
+        <view class="image-add-btn" wx:if="{{moodImages.length < 9}}" bindtap="addMoodImage">
+          <text class="add-icon">+</text>
+          <text>添加照片</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 保存按钮 -->
+    <button class="btn-save-mood" bindtap="saveMood" loading="{{savingMood}}">保存心情</button>
+  </view>
+</view>
+
+<!-- 查看心情详情弹窗 -->
+<view class="mood-popup-mask" wx:if="{{showMoodDetail}}" bindtap="closeMoodDetail">
+  <view class="mood-popup" catchtap="noop">
+    <view class="popup-header">
+      <text class="popup-title">{{popupDate}} 心情</text>
+      <view class="popup-close" bindtap="closeMoodDetail">✕</view>
+    </view>
+    <view wx:for="{{moodDetailList}}" wx:key="uid" class="mood-detail-item">
+      <view class="mood-detail-header">
+        <text class="mood-detail-nickname">💕 {{item.nickname}}</text>
+        <text class="mood-detail-emoji">{{item.emoji}} {{item.label}}</text>
+      </view>
+      <view class="mood-detail-note" wx:if="{{item.note}}">{{item.note}}</view>
+      <view class="mood-detail-images" wx:if="{{item.images && item.images.length > 0}}">
+        <image
+          wx:for="{{item.images}}"
+          wx:key="index"
+          wx:for-item="img"
+          src="{{img}}"
+          mode="aspectFill"
+          class="mood-detail-image"
+          bindtap="previewDetailImage"
+          data-url="{{img}}"
+          data-urls="{{item.images}}"
+        ></image>
+      </view>
+      <view class="mood-detail-edit" wx:if="{{item.isMine}}" bindtap="editMoodFromDetail" data-item="{{item}}">修改</view>
+    </view>
+  </view>
+</view>

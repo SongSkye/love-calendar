@@ -1,0 +1,62 @@
+<!--
+  纪念日编辑页 - 新增/编辑纪念日
+-->
+<view class="edit-page">
+  <!-- 名称 -->
+  <view class="form-group">
+    <view class="form-label">纪念日名称</view>
+    <input
+      class="form-input"
+      placeholder="比如：在一起、第一次旅行、生日..."
+      value="{{title}}"
+      bindinput="onTitleInput"
+      maxlength="30"
+    />
+  </view>
+
+  <!-- 日期 -->
+  <view class="form-group">
+    <view class="form-label">日期</view>
+    <picker mode="date" value="{{anniversaryDate}}" bindchange="onDateChange">
+      <view class="date-picker">{{anniversaryDate || '请选择日期'}}</view>
+    </picker>
+  </view>
+
+  <!-- 类型 -->
+  <view class="form-group">
+    <view class="form-label">类型</view>
+    <view class="type-selector">
+      <view
+        class="type-item {{type === 'together' ? 'active' : ''}}"
+        bindtap="selectType"
+        data-type="together"
+      >
+        <text class="type-icon">💕</text>
+        <text class="type-label">在一起</text>
+      </view>
+      <view
+        class="type-item {{type === 'birthday' ? 'active' : ''}}"
+        bindtap="selectType"
+        data-type="birthday"
+      >
+        <text class="type-icon">🎂</text>
+        <text class="type-label">生日</text>
+      </view>
+      <view
+        class="type-item {{type === 'custom' ? 'active' : ''}}"
+        bindtap="selectType"
+        data-type="custom"
+      >
+        <text class="type-icon">📌</text>
+        <text class="type-label">其他</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 保存按钮 -->
+  <view class="save-area">
+    <button class="btn-save" bindtap="saveAnniversary" loading="{{saving}}">
+      {{isEdit ? '保存修改' : '添加纪念日'}}
+    </button>
+  </view>
+</view>

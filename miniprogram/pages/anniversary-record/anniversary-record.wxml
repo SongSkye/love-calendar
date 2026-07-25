@@ -1,0 +1,92 @@
+<!-- 纪念日编辑/记录页 -->
+<view class="edit-page">
+  <!-- 封面图 -->
+  <view class="cover-section">
+    <view class="cover-preview" bindtap="chooseCover">
+      <image wx:if="{{coverImage}}" src="{{coverImage}}" mode="aspectFill" class="cover-img"></image>
+      <view wx:else class="cover-placeholder">
+        <text class="cover-placeholder-icon">📷</text>
+        <text class="cover-placeholder-text">点击上传封面图</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="form-card">
+    <!-- 名称 -->
+    <view class="form-group">
+      <view class="form-label">纪念日名称</view>
+      <input class="form-input" placeholder="比如：在一起、第一次旅行..." value="{{title}}" bindinput="onTitleInput" maxlength="30" />
+    </view>
+
+    <!-- 日期 -->
+    <view class="form-group">
+      <view class="form-label">日期</view>
+      <picker mode="date" value="{{anniversaryDate}}" bindchange="onDateChange">
+        <view class="date-picker">{{anniversaryDate || '请选择日期'}}</view>
+      </picker>
+    </view>
+
+    <!-- 类型 -->
+    <view class="form-group">
+      <view class="form-label">类型</view>
+      <view class="type-selector">
+        <view class="type-item {{type === 'together' ? 'active' : ''}}" bindtap="selectType" data-type="together">
+          <text class="type-icon">💕</text>
+          <text class="type-label">在一起</text>
+        </view>
+        <view class="type-item {{type === 'birthday' ? 'active' : ''}}" bindtap="selectType" data-type="birthday">
+          <text class="type-icon">🎂</text>
+          <text class="type-label">生日</text>
+        </view>
+        <view class="type-item {{type === 'custom' ? 'active' : ''}}" bindtap="selectType" data-type="custom">
+          <text class="type-icon">📌</text>
+          <text class="type-label">其他</text>
+        </view>
+      </view>
+    </view>
+
+    <!-- 今年记录（仅在 record 模式或编辑已有纪念日时显示） -->
+    <view class="form-group" wx:if="{{isRecord || isEdit}}">
+      <view class="form-label">
+        <text>📝 记录</text>
+      </view>
+      <!-- 年份选择器 -->
+      <view class="year-picker-row" wx:if="{{isRecord}}">
+        <text class="year-label">选择年份：</text>
+        <picker mode="selector" range="{{yearRange}}" value="{{yearRange.indexOf(recordYear)}}" bindchange="onYearChange">
+          <view class="year-picker-display">
+            <text>{{recordYear}}年</text>
+            <text class="year-arrow">▼</text>
+          </view>
+        </picker>
+        <text class="year-hint" wx:if="{{existingRecordId}}">（已有记录，可修改）</text>
+        <text class="year-hint new-record" wx:else>（新记录）</text>
+      </view>
+      <textarea class="content-input" placeholder="这一年纪念日是怎么过的..." value="{{recordContent}}" bindinput="onRecordContentInput" maxlength="2000" auto-height />
+    </view>
+
+    <!-- 记录图片 -->
+    <view class="form-group" wx:if="{{isRecord || isEdit}}">
+      <view class="form-label">📷 记录照片（最多9张）</view>
+      <view class="image-upload-area">
+        <block wx:for="{{recordImages}}" wx:key="index">
+          <view class="image-upload-item">
+            <image src="{{item}}" mode="aspectFill" bindtap="previewRecordImage" data-url="{{item}}"></image>
+            <view class="delete-btn" catchtap="deleteRecordImage" data-index="{{index}}">✕</view>
+          </view>
+        </block>
+        <view class="image-add-btn" wx:if="{{recordImages.length < 9}}" bindtap="addRecordImage">
+          <text class="add-icon">+</text>
+          <text>添加照片</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 保存 -->
+  <view class="save-area">
+    <button class="btn-save" bindtap="saveAll" loading="{{saving}}">
+      {{isRecord ? '保存记录' : (isEdit ? '保存修改' : '添加纪念日')}}
+    </button>
+  </view>
+</view>
