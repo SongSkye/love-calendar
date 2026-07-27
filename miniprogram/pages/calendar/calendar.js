@@ -31,6 +31,14 @@ Page({
 
     // 详情
     moodDetailList: [],
+
+    // 心情统计
+    statRange: 'month',      // month | year | all
+    moodStats: [],           // 统计结果
+    moodStatsTotal: 0,       // 总计
+    moodStatsTopLabel: '',   // 占比最高的心情
+    moodStatsTopPercent: 0,  // 最高占比
+    allMoodsCache: null,     // 全部心情缓存（用于维度切换时前端过滤）
   },
 
   onLoad() {
@@ -52,12 +60,14 @@ Page({
         }
         this.loadMoods();
         this.loadAnniversaries();
+        this.loadMoodStats();
         this.checkTodayMood();
       }.bind(this));
       return;
     }
     this.loadMoods();
     this.loadAnniversaries();
+    this.loadMoodStats();
     this.checkTodayMood();
   },
 
@@ -84,6 +94,7 @@ Page({
     }
     this.generateCalendar();
     this.loadMoods();
+    this.computeStats();
   },
 
   nextMonth() {
@@ -99,6 +110,7 @@ Page({
     }
     this.generateCalendar();
     this.loadMoods();
+    this.computeStats();
   },
 
   /**
@@ -230,6 +242,99 @@ Page({
     const moodMap = this.data.moodMap;
     const hasToday = moodMap[today] && moodMap[today].users.length > 0;
     this.setData({ hasTodayMood: hasToday });
+  },
+
+  /**
+   * 加载心情统计数据
+   * 首次加载时缓存全部心情数据，后续切换维度只需前端过滤
+   */
+  async loadMoodStats() {
+    const coupleId = app.globalData.coupleId;
+    if (!coupleId) return;
+    const db = app.getDb();
+
+    try {
+      // 首次加载拉取全部心情记录，缓存起来
+      if (!this.data.allMoodsCache) {
+        const res = await db.collection('moods').where({ coupleId: coupleId }).get();
+        this.data.allMoodsCache = res.data;
+      }
+      this.computeStats();
+    } catch (err) {
+      console.error('加载心情统计失败:', err);
+    }
+  },
+
+  /**
+   * 根据当前维度计算统计数据
+   */
+  computeStats() {
+    const allMoods = this.data.allMoodsCache || [];
+    const range = this.data.statRange;
+    const now = new Date();
+    const currentYear = this.data.currentYear;
+    const currentMonth = this.data.currentMonth;
+
+    // 按维度过滤数据
+    const filtered = allMoods.filter(function (item) {
+      if (range === 'all') return true;
+      const d = item.date; // YYYY-MM-DD
+      if (range === 'year') return d.startsWith(String(currentYear));
+      if (range === 'month') {
+        const month = currentYear + '-' + String(currentMonth).padStart(2, '0');
+        return d.startsWith(month);
+      }
+      return true;
+    });
+
+    // 按 mood 分组统计
+    const moodOptions = util.getMoodOptions();
+    const countMap = {};
+    moodOptions.forEach(function (m) { countMap[m.key] = 0; });
+
+    filtered.forEach(function (item) {
+      if (countMap[item.mood] !== undefined) {
+        countMap[item.mood]++;
+      }
+    });
+
+    const total = filtered.length;
+    const maxCount = Math.max.apply(null, Object.values(countMap)) || 1;
+
+    // 找出占比最高的心情
+    let topKey = '';
+    let topCount = 0;
+    Object.keys(countMap).forEach(function (k) {
+      if (countMap[k] > topCount) { topCount = countMap[k]; topKey = k; }
+    });
+    const moodInfo = util.getMoodInfo(topKey);
+    const topPercent = total > 0 ? Math.round((topCount / total) * 100) : 0;
+
+    const stats = moodOptions.map(function (m) {
+      return {
+        key: m.key,
+        emoji: m.emoji,
+        label: m.label,
+        count: countMap[m.key],
+        percent: total > 0 ? Math.round((countMap[m.key] / maxCount) * 100) : 0,
+      };
+    });
+
+    this.setData({
+      moodStats: stats,
+      moodStatsTotal: total,
+      moodStatsTopLabel: moodInfo.label,
+      moodStatsTopPercent: topPercent,
+    });
+  },
+
+  /**
+   * 切换统计维度
+   */
+  switchStatRange(e) {
+    const range = e.currentTarget.dataset.range;
+    this.setData({ statRange: range });
+    this.computeStats();
   },
 
   onDateTap(e) {
@@ -381,7 +486,9 @@ Page({
         }
       }
       this.setData({ showMoodPopup: false });
+      this.data.allMoodsCache = null;  // 清除缓存，强制重新加载
       this.loadMoods();
+      this.loadMoodStats();
       this.checkTodayMood();
     } catch (err) {
       console.error('保存心情失败:', err);

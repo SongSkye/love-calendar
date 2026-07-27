@@ -417,3 +417,128 @@
   font-size: 24rpx;
   padding: 8rpx 0;
 }
+
+/* ===== 心情统计卡片 ===== */
+.mood-stats-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 28rpx;
+  margin-top: 20rpx;
+  box-shadow: 0 4rpx 20rpx rgba(255, 107, 129, 0.08);
+}
+
+.stats-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24rpx;
+}
+
+.stats-title {
+  font-size: 30rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.stats-range-tabs {
+  display: flex;
+  background: #FFF5F6;
+  border-radius: 30rpx;
+  padding: 4rpx;
+}
+
+.stats-range-tab {
+  font-size: 22rpx;
+  color: #999999;
+  padding: 8rpx 20rpx;
+  border-radius: 30rpx;
+  transition: all 0.2s;
+}
+
+.stats-range-tab.active {
+  background: #FF6B81;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+/* 统计列表 */
+.stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.stats-item {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+}
+
+.stats-item-left {
+  display: flex;
+  align-items: center;
+  width: 100rpx;
+  flex-shrink: 0;
+}
+
+.stats-emoji {
+  font-size: 32rpx;
+  margin-right: 8rpx;
+}
+
+.stats-label {
+  font-size: 24rpx;
+  color: #666666;
+}
+
+.stats-bar-wrap {
+  flex: 1;
+  height: 16rpx;
+  background: #F5F5F5;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.stats-bar {
+  height: 100%;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #FFB3BF, #FF6B81);
+  transition: width 0.4s ease;
+}
+
+.stats-count {
+  font-size: 26rpx;
+  font-weight: bold;
+  color: #FF6B81;
+  width: 48rpx;
+  text-align: right;
+  flex-shrink: 0;
+}
+
+/* 统计底部 */
+.stats-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 20rpx;
+  padding-top: 16rpx;
+  border-top: 1rpx solid #F5F5F5;
+}
+
+.stats-total {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.stats-top {
+  font-size: 24rpx;
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+.stats-empty {
+  text-align: center;
+  padding: 40rpx 0;
+  font-size: 26rpx;
+  color: #CCCCCC;
+}

@@ -70,6 +70,56 @@
       <text class="today-text">记录今天的心情吧～</text>
     </view>
   </view>
+
+  <!-- ===== 心情统计卡片 ===== -->
+  <view class="mood-stats-card">
+    <view class="stats-header">
+      <text class="stats-title">📊 心情统计</text>
+      <view class="stats-range-tabs">
+        <text
+          class="stats-range-tab {{statRange === 'month' ? 'active' : ''}}"
+          data-range="month"
+          bindtap="switchStatRange"
+        >当月</text>
+        <text
+          class="stats-range-tab {{statRange === 'year' ? 'active' : ''}}"
+          data-range="year"
+          bindtap="switchStatRange"
+        >今年</text>
+        <text
+          class="stats-range-tab {{statRange === 'all' ? 'active' : ''}}"
+          data-range="all"
+          bindtap="switchStatRange"
+        >全部</text>
+      </view>
+    </view>
+
+    <view class="stats-list">
+      <view
+        class="stats-item"
+        wx:for="{{moodStats}}"
+        wx:key="key"
+        wx:for-item="stat"
+      >
+        <view class="stats-item-left">
+          <text class="stats-emoji">{{stat.emoji}}</text>
+          <text class="stats-label">{{stat.label}}</text>
+        </view>
+        <view class="stats-bar-wrap">
+          <view class="stats-bar" style="width: {{stat.percent}}%"></view>
+        </view>
+        <text class="stats-count">{{stat.count}}</text>
+      </view>
+    </view>
+
+    <view class="stats-footer" wx:if="{{moodStatsTotal > 0}}">
+      <text class="stats-total">共记录 {{moodStatsTotal}} 条心情</text>
+      <text class="stats-top">📈 {{moodStatsTopLabel}}占比 {{moodStatsTopPercent}}%</text>
+    </view>
+    <view class="stats-empty" wx:else>
+      <text>暂无心情记录，开始记录你们的每一天吧 💕</text>
+    </view>
+  </view>
 </view>
 
 <!-- 心情记录弹窗 -->
