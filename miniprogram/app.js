@@ -1,8 +1,12 @@
 /**
  * 恋爱日历小程序 - 应用入口
- * 用户标识：优先微信 openid（云函数），兜底本地 UUID
- * 云函数部署后自动切换为 openid 模式
+ * 用户标识：优先微信 openid（Cloudflare Worker），兜底本地 UUID
+ * 三层兜底策略：Worker 成功 → UUID 降级 → 权限兜底
  */
+
+// Cloudflare Worker URL（部署后替换为实际地址）
+var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getOpenid';
+
 App({
   onLaunch: function () {
     // 初始化云开发环境
@@ -20,22 +24,22 @@ App({
 
     // 全局数据（含缓存，避免各页面重复查询）
     this.globalData = {
-      openid: '',           // 微信 openid（云函数部署后才有）
-      myUid: '',            // 本地 UUID（兜底，云函数未部署时使用）
+      openid: '',           // 微信 openid（Worker 获取后写入）
+      myUid: '',            // 本地 UUID（兜底）
       userInfo: null,
       partnerInfo: null,
       coupleId: null,
       isBound: false,
       togetherDate: null,
       openidReady: false,
-      useOpenid: false,     // 是否使用 openid 模式（云函数可用）
-      usersCache: null,         // users 表缓存（两人数据），避免各页面重复查询
+      useOpenid: false,         // 是否使用 openid 模式
+      usersCache: null,         // users 表缓存
       anniversariesCache: null, // 纪念日列表缓存
     };
 
     // 初始化本地 UUID（兜底用）
     this.initMyUid();
-    // 尝试获取 openid
+    // 尝试通过 Worker 获取 openid
     this.fetchOpenid();
   },
 
@@ -63,38 +67,45 @@ App({
   },
 
   /**
-   * 尝试获取 openid，如果云函数不可用则降级为 UUID 模式
+   * 通过 wx.login + Cloudflare Worker 获取微信 openid
+   * 失败时降级为 UUID 模式，不丢数据
    */
   async fetchOpenid() {
-    // 如果之前已确认云函数不可用，直接跳过，避免每次等待超时
-    var cloudFnDisabled = wx.getStorageSync('cloudFnDisabled');
-    if (cloudFnDisabled) {
-      console.log('⏭️ 云函数已确认不可用，直接使用 UUID 模式');
-      this.globalData.useOpenid = false;
-      await this.checkBindStatus();
-      this.globalData.openidReady = true;
-      return;
-    }
-
     try {
-      var res = await wx.cloud.callFunction({
-        name: 'getOpenid',
-        data: { action: 'getOpenid' }
+      // 1. 通过 wx.login 获取临时 code
+      var loginRes = await new Promise(function (resolve, reject) {
+        wx.login({ success: resolve, fail: reject });
+      });
+      if (!loginRes.code) throw new Error('wx.login 未返回 code');
+
+      // 2. 调用 Cloudflare Worker 换取 openid
+      var resp = await new Promise(function (resolve, reject) {
+        wx.request({
+          url: WORKER_URL,
+          method: 'POST',
+          data: { code: loginRes.code },
+          header: { 'Content-Type': 'application/json' },
+          success: resolve,
+          fail: reject,
+        });
       });
 
-      if (res.result && res.result.success) {
-        this.globalData.openid = res.result.data.openid;
+      if (resp.statusCode === 200 && resp.data && resp.data.success) {
+        var openid = resp.data.data.openid;
+        this.globalData.openid = openid;
         this.globalData.useOpenid = true;
+        // 持久化 openid，换手机后虽然本地存储会丢，但 Worker 会重新获取
+        wx.setStorageSync('love_calendar_openid', openid);
         console.log('✅ openid 模式已启用');
+      } else {
+        throw new Error('Worker 返回异常: ' + JSON.stringify(resp.data));
       }
     } catch (err) {
-      // 云函数未部署，降级为 UUID 模式，并记住状态避免下次重试
-      console.warn('⚠️ getOpenid 云函数不可用，使用 UUID 模式:', err.message);
+      // 降级：Worker 不可用 → 使用 UUID 模式
+      console.warn('⚠️ Worker 获取 openid 失败，降级 UUID 模式:', err.message || err);
       this.globalData.useOpenid = false;
-      wx.setStorageSync('cloudFnDisabled', true);
     }
 
-    // 检查绑定状态
     await this.checkBindStatus();
     this.globalData.openidReady = true;
   },
@@ -117,31 +128,38 @@ App({
   },
 
   /**
-   * 检查用户绑定状态
+   * 检查用户绑定状态（三层兜底）
+   * 第一层：openid 模式 → 按 openid 查 DB → 找不到则权限兜底补全
+   * 第二层：UUID 模式 → 按 uid 查 DB
+   * 第三层：权限兜底 → db.get() 不加条件，系统按 _openid 过滤
    */
   checkBindStatus: function () {
     var app = this;
     var uid = app.getUserId();
+    var db = app.getDb();
 
-    // openid 模式：通过云函数检查
+    // openid 模式：直接查数据库（不再依赖云函数）
     if (app.globalData.useOpenid) {
-      var oldUid = wx.getStorageSync('love_calendar_uid') || '';
-      return wx.cloud.callFunction({
-        name: 'getOpenid',
-        data: { action: 'check', oldUid: oldUid }
-      }).then(function (res) {
-        if (!res.result || !res.result.success || !res.result.data.found) {
+      var openid = app.globalData.openid;
+      return db.collection('users').where({ openid: openid }).get().then(function (res) {
+        if (res.data.length > 0) {
+          return app.setupUserState(res.data[0]);
+        }
+        // 兜底：DB 中只有旧 UUID 记录（没有 openid 字段）
+        // 利用权限系统自动查找，找到后补全 openid
+        return db.collection('users').get().then(function (fb) {
+          if (fb.data.length > 0) {
+            var user = fb.data[0];
+            console.log('通过权限兜底找回旧记录，自动补全 openid');
+            return db.collection('users').doc(user._id).update({
+              data: { openid: openid }
+            }).then(function () {
+              user.openid = openid;
+              return app.setupUserState(user);
+            });
+          }
           return false;
-        }
-        var data = res.result.data;
-        var user = data.user;
-        if (!data.migrated) {
-          return app.migrateData(oldUid).then(function () {
-            user.openid = app.globalData.openid;
-            return app.setupUserState(user);
-          });
-        }
-        return app.setupUserState(user);
+        });
       }).catch(function (err) {
         console.error('检查绑定状态失败:', err);
         return false;
@@ -149,18 +167,16 @@ App({
     }
 
     // UUID 模式：直接查数据库
-    return app.getDb().collection('users').where({ uid: uid }).get().then(function (res) {
+    return db.collection('users').where({ uid: uid }).get().then(function (res) {
       if (res.data.length > 0) {
         return app.setupUserState(res.data[0]);
       }
       // 兜底：UUID 丢失（清缓存/重装小程序），利用数据库"仅创建者可读写"权限
-      // 不加 where 条件查询时，系统自动按 _openid 过滤，只返回当前用户创建的记录
-      return app.getDb().collection('users').get().then(function (fallbackRes) {
+      return db.collection('users').get().then(function (fallbackRes) {
         if (fallbackRes.data.length > 0) {
           var user = fallbackRes.data[0];
           console.log('通过权限兜底找回用户记录，更新 UUID');
-          // 把当前 UUID 写回记录，确保下次能正常匹配
-          app.getDb().collection('users').doc(user._id).update({
+          db.collection('users').doc(user._id).update({
             data: { uid: uid }
           }).catch(function () {});
           return app.setupUserState(user);
@@ -170,25 +186,6 @@ App({
     }).catch(function (err) {
       console.error('检查绑定状态失败:', err);
       return false;
-    });
-  },
-
-  /**
-   * 迁移旧 UUID 数据到 openid
-   */
-  migrateData: function (oldUid) {
-    if (!oldUid) return Promise.resolve();
-    return wx.cloud.callFunction({
-      name: 'getOpenid',
-      data: { action: 'migrate', oldUid: oldUid }
-    }).then(function (res) {
-      if (res.result && res.result.success) {
-        console.log('数据迁移成功:', res.result.data);
-      } else {
-        console.error('数据迁移失败:', res.result);
-      }
-    }).catch(function (err) {
-      console.error('数据迁移异常:', err);
     });
   },
 
