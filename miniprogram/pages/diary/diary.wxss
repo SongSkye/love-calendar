@@ -46,6 +46,15 @@
   margin-bottom: 20rpx;
   box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
   transition: transform 0.2s;
+  border-left: 8rpx solid transparent;
+}
+
+.diary-item.item-me {
+  border-left-color: #FF6B81;
+}
+
+.diary-item.item-partner {
+  border-left-color: #FFB347;
 }
 
 .diary-item:active {
@@ -62,21 +71,36 @@
 .diary-author {
   display: flex;
   align-items: center;
+  gap: 12rpx;
 }
 
-.tag {
-  font-size: 20rpx;
-  padding: 4rpx 12rpx;
-  border-radius: 8rpx;
-  color: #FFFFFF;
+/* 作者头像 */
+.author-avatar {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  object-fit: cover;
+  border: 2rpx solid rgba(255, 107, 129, 0.3);
+  flex-shrink: 0;
 }
 
-.tag-me {
-  background: #FF6B81;
+.author-avatar-default {
+  width: 48rpx;
+  height: 48rpx;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 28rpx;
+  background: #FFF0F2;
+  border: 2rpx solid rgba(255, 107, 129, 0.3);
+  flex-shrink: 0;
 }
 
-.tag-partner {
-  background: #FFB347;
+.author-nickname {
+  font-size: 26rpx;
+  font-weight: 500;
+  color: #333333;
 }
 
 .diary-date {
@@ -212,13 +236,16 @@
 .detail-meta {
   display: flex;
   align-items: center;
-  gap: 16rpx;
+  gap: 12rpx;
   margin-bottom: 20rpx;
+  padding-bottom: 16rpx;
+  border-bottom: 1rpx solid #F0F0F0;
 }
 
 .detail-date {
   font-size: 24rpx;
   color: #999999;
+  margin-left: auto;
 }
 
 .detail-content {

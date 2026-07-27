@@ -33,7 +33,7 @@
 
     <!-- 日记条目 -->
     <view
-      class="diary-item"
+      class="diary-item {{item.role === 'creator' ? 'item-me' : 'item-partner'}}"
       wx:for="{{diaries}}"
       wx:key="_id"
       bindtap="viewDetail"
@@ -41,9 +41,9 @@
     >
       <view class="diary-header">
         <view class="diary-author">
-          <text class="tag {{item.role === 'creator' ? 'tag-me' : 'tag-partner'}}">
-            {{item.nickname}}
-          </text>
+          <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill" class="author-avatar"></image>
+          <view wx:else class="author-avatar-default">💕</view>
+          <text class="author-nickname">{{item.nickname}}</text>
         </view>
         <view class="diary-date">{{item.date}}</view>
       </view>
@@ -86,9 +86,9 @@
       <view class="detail-close" bindtap="closeDetail">✕</view>
     </view>
     <view class="detail-meta">
-      <text class="tag {{detailDiary.role === 'creator' ? 'tag-me' : 'tag-partner'}}">
-        {{detailDiary.nickname}}
-      </text>
+      <image wx:if="{{detailDiary.avatar}}" src="{{detailDiary.avatar}}" mode="aspectFill" class="author-avatar"></image>
+      <view wx:else class="author-avatar-default">💕</view>
+      <text class="author-nickname">{{detailDiary.nickname}}</text>
       <text class="detail-date">{{detailDiary.date}}</text>
     </view>
     <view class="detail-content">{{detailDiary.content}}</view>

@@ -4,7 +4,7 @@
 const app = getApp();
 
 // 页面级缓存：避免重复查询
-var userMapCache = null;    // 用户昵称缓存
+var userMapCache = null;    // 用户昵称+头像缓存
 var cacheCoupleId = null;   // 缓存对应的 coupleId
 
 Page({
@@ -16,11 +16,11 @@ Page({
     showDetail: false,
     detailDiary: {},
     keyword: '',
-    searchTimer: null,
     firstLoad: true,        // 是否首次加载
   },
 
   onLoad() {
+    this._searchTimer = null;
     this.loadDiaries();
   },
 
@@ -52,21 +52,21 @@ Page({
   },
 
   /**
-   * 获取用户昵称映射（带缓存，只查一次）
+   * 获取用户信息映射（带缓存，只查一次）
+   * 注意：小程序 <image> 原生支持 cloud:// 路径，无需转换
    */
   async getUserMap() {
     var coupleId = app.globalData.coupleId;
-    // 缓存有效，直接返回
     if (userMapCache && cacheCoupleId === coupleId) {
       return userMapCache;
     }
 
-    // 查询 users 表
     var db = app.getDb();
     var userRes = await db.collection('users').where({ coupleId: coupleId }).get();
+
     var map = {};
     userRes.data.forEach(function (u) {
-      var entry = { nickname: u.nickname, role: u.role };
+      var entry = { nickname: u.nickname, role: u.role, avatar: u.avatar || '' };
       if (u.openid) map[u.openid] = entry;
       if (u.uid) map[u.uid] = entry;
     });
@@ -90,12 +90,12 @@ Page({
     var keyword = e.detail.value;
     this.setData({ keyword: keyword });
 
-    if (this.data.searchTimer) {
-      clearTimeout(this.data.searchTimer);
+    if (this._searchTimer) {
+      clearTimeout(this._searchTimer);
     }
 
     var that = this;
-    this.data.searchTimer = setTimeout(function () {
+    this._searchTimer = setTimeout(function () {
       that.setData({ page: 1, diaries: [], hasMore: true });
       that.loadDiaries();
     }, 300);
@@ -164,11 +164,12 @@ Page({
         var pageData = allData.slice(skip, skip + pageSize);
 
         var diaries = pageData.map(function (item) {
-          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown' };
+          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
+            avatar: u.avatar || '',
             isMine: item.uid === myUid,
           };
         });
@@ -192,11 +193,12 @@ Page({
         ]);
 
         var diaries = res.data.map(function (item) {
-          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown' };
+          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
+            avatar: u.avatar || '',
             isMine: item.uid === myUid,
           };
         });
@@ -231,15 +233,33 @@ Page({
       var res = await db.collection('diaries').doc(id).get();
       if (res.data) {
         var diary = res.data;
-        var _ = app._;
-        var userRes = await db.collection('users').where(
-          _.or([{ openid: diary.uid }, { uid: diary.uid }])
-        ).get();
-        var nickname = userRes.data.length > 0 ? userRes.data[0].nickname : '未知';
-        var role = userRes.data.length > 0 ? userRes.data[0].role : 'unknown';
+        var myUid = app.getUserId();
+
+        // 优先使用缓存的用户信息，避免重复查库
+        var userInfo = userMapCache && userMapCache[diary.uid]
+          ? userMapCache[diary.uid]
+          : null;
+
+        if (!userInfo) {
+          // 缓存未命中时才查库
+          var _ = app._;
+          var userRes = await db.collection('users').where(
+            _.or([{ openid: diary.uid }, { uid: diary.uid }])
+          ).get();
+          userInfo = userRes.data.length > 0
+            ? { nickname: userRes.data[0].nickname, role: userRes.data[0].role, avatar: userRes.data[0].avatar || '' }
+            : { nickname: '未知', role: 'unknown', avatar: '' };
+        }
+
         this.setData({
           showDetail: true,
-          detailDiary: { ...diary, nickname: nickname, role: role, isMine: diary.uid === app.getUserId() },
+          detailDiary: {
+            ...diary,
+            nickname: userInfo.nickname,
+            role: userInfo.role,
+            avatar: userInfo.avatar,
+            isMine: diary.uid === myUid,
+          },
         });
       }
     } catch (err) {
@@ -255,57 +275,41 @@ Page({
     wx.navigateTo({ url: '/pages/diary-edit/diary-edit?id=' + id });
   },
 
-  async deleteDiary(e) {
+  /**
+   * 统一的删除逻辑
+   */
+  _doDeleteDiary(id, closeDetail) {
     var that = this;
-    var id = e.currentTarget.dataset.id;
+    if (closeDetail) this.setData({ showDetail: false });
+
     wx.showModal({
       title: '删除确认',
       content: '确定要删除这篇日记吗？',
       success: async function (res) {
-        if (res.confirm) {
-          try {
-            var diaryRes = await app.getDb().collection('diaries').doc(id).get();
-            if (diaryRes.data && diaryRes.data.images && diaryRes.data.images.length > 0) {
-              wx.cloud.deleteFile({ fileList: diaryRes.data.images }).catch(function () {});
-            }
-            await app.getDb().collection('diaries').doc(id).remove();
-            wx.showToast({ title: '已删除', icon: 'success' });
-            userMapCache = null;  // 清除缓存
-            that.setData({ page: 1, diaries: [], hasMore: true });
-            that.loadDiaries();
-          } catch (err) {
-            wx.showToast({ title: '删除失败', icon: 'none' });
+        if (!res.confirm) return;
+        try {
+          var diaryRes = await app.getDb().collection('diaries').doc(id).get();
+          if (diaryRes.data && diaryRes.data.images && diaryRes.data.images.length > 0) {
+            wx.cloud.deleteFile({ fileList: diaryRes.data.images }).catch(function () {});
           }
+          await app.getDb().collection('diaries').doc(id).remove();
+          wx.showToast({ title: '已删除', icon: 'success' });
+          userMapCache = null;
+          that.setData({ page: 1, diaries: [], hasMore: true });
+          that.loadDiaries();
+        } catch (err) {
+          wx.showToast({ title: '删除失败', icon: 'none' });
         }
       }
     });
   },
 
-  async deleteDiaryFromDetail() {
-    var that = this;
-    var id = this.data.detailDiary._id;
-    this.setData({ showDetail: false });
-    wx.showModal({
-      title: '删除确认',
-      content: '确定要删除这篇日记吗？',
-      success: async function (res) {
-        if (res.confirm) {
-          try {
-            var diary = that.data.detailDiary;
-            if (diary.images && diary.images.length > 0) {
-              wx.cloud.deleteFile({ fileList: diary.images }).catch(function () {});
-            }
-            await app.getDb().collection('diaries').doc(id).remove();
-            wx.showToast({ title: '已删除', icon: 'success' });
-            userMapCache = null;  // 清除缓存
-            that.setData({ page: 1, diaries: [], hasMore: true });
-            that.loadDiaries();
-          } catch (err) {
-            wx.showToast({ title: '删除失败', icon: 'none' });
-          }
-        }
-      }
-    });
+  deleteDiary(e) {
+    this._doDeleteDiary(e.currentTarget.dataset.id);
+  },
+
+  deleteDiaryFromDetail() {
+    this._doDeleteDiary(this.data.detailDiary._id, true);
   },
 
   previewImage(e) {
