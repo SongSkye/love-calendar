@@ -58,17 +58,11 @@ Page({
           wx.reLaunch({ url: '/pages/welcome/welcome' });
           return;
         }
-        this.loadMoods();
-        this.loadAnniversaries();
-        this.loadMoodStats();
-        this.checkTodayMood();
+        this.loadAllData();
       }.bind(this));
       return;
     }
-    this.loadMoods();
-    this.loadAnniversaries();
-    this.loadMoodStats();
-    this.checkTodayMood();
+    this.loadAllData();
   },
 
   initCalendar() {
@@ -93,8 +87,7 @@ Page({
       this.setData({ currentMonth: currentMonth - 1 });
     }
     this.generateCalendar();
-    this.loadMoods();
-    this.computeStats();
+    this.loadAllData();
   },
 
   nextMonth() {
@@ -109,45 +102,46 @@ Page({
       this.setData({ currentMonth: currentMonth + 1 });
     }
     this.generateCalendar();
-    this.loadMoods();
-    this.computeStats();
+    this.loadAllData();
   },
 
   /**
-   * 加载当月心情数据
+   * 统一加载所有数据，一次查询 moods，其他从 globalData 缓存复用
+   * 替代原来的 loadMoods + loadAnniversaries + loadMoodStats 三个独立查询
    */
-  async loadMoods() {
-    const { currentYear, currentMonth } = this.data;
-    const month = currentYear + '-' + String(currentMonth).padStart(2, '0');
+  async loadAllData() {
     const coupleId = app.globalData.coupleId;
     if (!coupleId) return;
-
     const db = app.getDb();
-    const _ = app._;
 
     try {
-      const startDate = month + '-01';
-      const endDate = month + '-31';
-
-      // 并行加载 moods 和 users
-      const [moodsRes, usersRes] = await Promise.all([
-        db.collection('moods').where({
-          coupleId: coupleId,
-          date: _.gte(startDate).and(_.lte(endDate)),
-        }).orderBy('date', 'asc').get(),
-        db.collection('users').where({ coupleId: coupleId }).get()
-      ]);
-
-      // 构建 uid → nickname 映射（兼容新旧数据）
+      // 1. 从 globalData 缓存复用 users 数据（app.js setupUserState 已查过）
+      const usersCache = app.globalData.usersCache || [];
       const userMap = {};
-      usersRes.data.forEach(function (u) {
+      usersCache.forEach(function (u) {
         var entry = { nickname: u.nickname, role: u.role };
         if (u.openid) userMap[u.openid] = entry;
         if (u.uid) userMap[u.uid] = entry;
       });
 
+      // 2. 从 globalData 缓存复用纪念日数据（app.js setupUserState 已查过）
+      const anniCache = app.globalData.anniversariesCache || [];
+      if (anniCache.length > 0) {
+        this.computeAnniversaries(anniCache);
+      }
+
+      // 3. 只查一次 moods 表（全部数据），同时用于月历展示和统计
+      const { currentYear, currentMonth } = this.data;
+      const month = currentYear + '-' + String(currentMonth).padStart(2, '0');
+
+      const moodsRes = await db.collection('moods').where({ coupleId: coupleId }).get();
+      const allMoods = moodsRes.data;
+      this.data.allMoodsCache = allMoods;
+
+      // 从全部 moods 中过滤当月数据，生成 moodMap
       const moodMap = {};
-      moodsRes.data.forEach(function (item) {
+      allMoods.forEach(function (item) {
+        if (!item.date.startsWith(month)) return; // 只要当月
         if (!moodMap[item.date]) {
           moodMap[item.date] = { users: [], hasPhoto: false };
         }
@@ -170,70 +164,55 @@ Page({
       });
 
       this.setData({ moodMap: moodMap });
+      this.checkTodayMood();
+      this.computeStats();
+
     } catch (err) {
-      console.error('加载心情失败:', err);
+      console.error('加载数据失败:', err);
     }
   },
 
   /**
-   * 加载纪念日信息
+   * 从纪念日缓存计算在一起天数和下个纪念日
    */
-  async loadAnniversaries() {
-    const coupleId = app.globalData.coupleId;
-    if (!coupleId) return;
-    const db = app.getDb();
+  computeAnniversaries(list) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    try {
-      const res = await db.collection('anniversaries')
-        .where({ coupleId: coupleId })
-        .orderBy('date', 'asc')
-        .get();
+    const enriched = list.map(function (item) {
+      const d = new Date(item.date);
+      const m = d.getMonth();
+      const day = d.getDate();
+      const thisYear = new Date(today.getFullYear(), m, day);
+      const nextYear = new Date(today.getFullYear() + 1, m, day);
+      const nextDate = thisYear >= today ? thisYear : nextYear;
+      const diffTime = nextDate.getTime() - today.getTime();
+      const countdownDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      const totalDiffTime = today.getTime() - d.getTime();
+      const totalDays = Math.floor(totalDiffTime / (1000 * 60 * 60 * 24));
+      return {
+        ...item,
+        totalDays: totalDays >= 0 ? totalDays : 0,
+        countdownDays: countdownDays,
+      };
+    });
 
-      if (res.data.length > 0) {
-        const list = res.data;
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+    const togetherItem = enriched.find(function (item) { return item.type === 'together'; });
+    if (togetherItem) {
+      this.setData({ togetherDays: togetherItem.totalDays });
+    } else if (enriched.length > 0) {
+      this.setData({ togetherDays: enriched[0].totalDays });
+    }
 
-        const enriched = list.map(function (item) {
-          const d = new Date(item.date);
-          const m = d.getMonth();
-          const day = d.getDate();
-          const thisYear = new Date(today.getFullYear(), m, day);
-          const nextYear = new Date(today.getFullYear() + 1, m, day);
-          const nextDate = thisYear >= today ? thisYear : nextYear;
-          const diffTime = nextDate.getTime() - today.getTime();
-          const countdownDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-          const totalDiffTime = today.getTime() - d.getTime();
-          const totalDays = Math.floor(totalDiffTime / (1000 * 60 * 60 * 24));
-          return {
-            ...item,
-            totalDays: totalDays >= 0 ? totalDays : 0,
-            countdownDays: countdownDays,
-          };
-        });
-
-        // 在一起天数
-        const togetherItem = enriched.find(function (item) { return item.type === 'together'; });
-        if (togetherItem) {
-          this.setData({ togetherDays: togetherItem.totalDays });
-        } else if (enriched.length > 0) {
-          this.setData({ togetherDays: enriched[0].totalDays });
+    const upcoming = enriched.filter(function (item) { return item.countdownDays > 0; })
+      .sort(function (a, b) { return a.countdownDays - b.countdownDays; });
+    if (upcoming.length > 0) {
+      this.setData({
+        nextAnniversary: {
+          title: upcoming[0].title,
+          countdownDays: upcoming[0].countdownDays,
         }
-
-        // 下一个纪念日
-        const upcoming = enriched.filter(function (item) { return item.countdownDays > 0; })
-          .sort(function (a, b) { return a.countdownDays - b.countdownDays; });
-        if (upcoming.length > 0) {
-          this.setData({
-            nextAnniversary: {
-              title: upcoming[0].title,
-              countdownDays: upcoming[0].countdownDays,
-            }
-          });
-        }
-      }
-    } catch (err) {
-      console.error('加载纪念日失败:', err);
+      });
     }
   },
 
@@ -245,28 +224,7 @@ Page({
   },
 
   /**
-   * 加载心情统计数据
-   * 首次加载时缓存全部心情数据，后续切换维度只需前端过滤
-   */
-  async loadMoodStats() {
-    const coupleId = app.globalData.coupleId;
-    if (!coupleId) return;
-    const db = app.getDb();
-
-    try {
-      // 首次加载拉取全部心情记录，缓存起来
-      if (!this.data.allMoodsCache) {
-        const res = await db.collection('moods').where({ coupleId: coupleId }).get();
-        this.data.allMoodsCache = res.data;
-      }
-      this.computeStats();
-    } catch (err) {
-      console.error('加载心情统计失败:', err);
-    }
-  },
-
-  /**
-   * 根据当前维度计算统计数据
+   * 根据当前维度计算统计数据（从缓存中过滤，无需查询数据库）
    */
   computeStats() {
     const allMoods = this.data.allMoodsCache || [];
@@ -487,9 +445,7 @@ Page({
       }
       this.setData({ showMoodPopup: false });
       this.data.allMoodsCache = null;  // 清除缓存，强制重新加载
-      this.loadMoods();
-      this.loadMoodStats();
-      this.checkTodayMood();
+      this.loadAllData();
     } catch (err) {
       console.error('保存心情失败:', err);
       wx.showToast({ title: '保存失败', icon: 'none' });

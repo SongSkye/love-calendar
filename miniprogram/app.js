@@ -18,7 +18,7 @@ App({
     this.db = wx.cloud.database();
     this._ = this.db.command;
 
-    // 全局数据
+    // 全局数据（含缓存，避免各页面重复查询）
     this.globalData = {
       openid: '',           // 微信 openid（云函数部署后才有）
       myUid: '',            // 本地 UUID（兜底，云函数未部署时使用）
@@ -29,6 +29,8 @@ App({
       togetherDate: null,
       openidReady: false,
       useOpenid: false,     // 是否使用 openid 模式（云函数可用）
+      usersCache: null,         // users 表缓存（两人数据），避免各页面重复查询
+      anniversariesCache: null, // 纪念日列表缓存
     };
 
     // 初始化本地 UUID（兜底用）
@@ -64,6 +66,16 @@ App({
    * 尝试获取 openid，如果云函数不可用则降级为 UUID 模式
    */
   async fetchOpenid() {
+    // 如果之前已确认云函数不可用，直接跳过，避免每次等待超时
+    var cloudFnDisabled = wx.getStorageSync('cloudFnDisabled');
+    if (cloudFnDisabled) {
+      console.log('⏭️ 云函数已确认不可用，直接使用 UUID 模式');
+      this.globalData.useOpenid = false;
+      await this.checkBindStatus();
+      this.globalData.openidReady = true;
+      return;
+    }
+
     try {
       var res = await wx.cloud.callFunction({
         name: 'getOpenid',
@@ -76,9 +88,10 @@ App({
         console.log('✅ openid 模式已启用');
       }
     } catch (err) {
-      // 云函数未部署，降级为 UUID 模式
+      // 云函数未部署，降级为 UUID 模式，并记住状态避免下次重试
       console.warn('⚠️ getOpenid 云函数不可用，使用 UUID 模式:', err.message);
       this.globalData.useOpenid = false;
+      wx.setStorageSync('cloudFnDisabled', true);
     }
 
     // 检查绑定状态
@@ -190,10 +203,13 @@ App({
     app.globalData.coupleId = user.coupleId;
     app.globalData.isBound = true;
 
-    // 获取对方信息
+    // 获取对方信息 + 缓存 users 表数据，避免各页面重复查询
     return db.collection('users').where({
       coupleId: user.coupleId
     }).get().then(function (partnerRes) {
+      // 缓存 users 数据，供日历页等复用
+      app.globalData.usersCache = partnerRes.data;
+
       var partner = null;
       for (var i = 0; i < partnerRes.data.length; i++) {
         var u = partnerRes.data[i];
@@ -205,9 +221,11 @@ App({
       if (partner) {
         app.globalData.partnerInfo = partner;
       }
+      // 获取纪念日列表 + 缓存，供日历页复用
       return db.collection('anniversaries').where({
         coupleId: user.coupleId
-      }).orderBy('date', 'asc').limit(1).get().then(function (anniRes) {
+      }).orderBy('date', 'asc').get().then(function (anniRes) {
+        app.globalData.anniversariesCache = anniRes.data;
         if (anniRes.data.length > 0) {
           app.globalData.togetherDate = anniRes.data[0].date;
         }
