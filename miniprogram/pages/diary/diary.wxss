@@ -428,18 +428,18 @@
 .comment-input-wrap {
   display: flex;
   align-items: center;
-  gap: 12rpx;
-  padding: 8rpx 0;
-  margin-top: 8rpx;
+  gap: 16rpx;
+  padding: 12rpx 0;
+  margin-top: 12rpx;
 }
 
 .comment-input {
   flex: 1;
   background: #F5F5F5;
   border-radius: 40rpx;
-  padding: 14rpx 24rpx;
-  font-size: 24rpx;
-  height: 56rpx;
+  padding: 16rpx 28rpx;
+  font-size: 26rpx;
+  height: 64rpx;
 }
 
 .comment-submit-btn {
@@ -447,8 +447,8 @@
   background: linear-gradient(135deg, #FF6B81, #FF8E9E);
   color: #FFFFFF;
   border-radius: 40rpx;
-  font-size: 24rpx;
-  padding: 14rpx 24rpx;
+  font-size: 22rpx;
+  padding: 10rpx 20rpx;
   border: none;
   line-height: 1;
 }
