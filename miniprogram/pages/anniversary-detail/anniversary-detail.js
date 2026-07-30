@@ -196,6 +196,8 @@ Page({
             // 删除记录和纪念日
             await db.collection('anniversary_records').where({ anniversaryId: id }).remove();
             await db.collection('anniversaries').doc(id).remove();
+            // 清除纪念日缓存，确保日历页和列表页重新加载
+            app.globalData.anniversariesCache = null;
             wx.showToast({ title: '已删除', icon: 'success' });
             setTimeout(function () { wx.navigateBack(); }, 1500);
           } catch (err) {

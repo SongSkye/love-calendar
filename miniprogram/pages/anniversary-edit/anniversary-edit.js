@@ -64,6 +64,8 @@ Page({
         });
         wx.showToast({ title: '已添加', icon: 'success' });
       }
+      // 清除纪念日缓存，确保日历页和纪念日列表页重新加载
+      app.globalData.anniversariesCache = null;
       setTimeout(function () { wx.navigateBack(); }, 1500);
     } catch (err) {
       console.error(err);

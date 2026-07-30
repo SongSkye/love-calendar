@@ -1,6 +1,6 @@
 <!--
   日记列表页 - 第二个Tab
-  时间线展示两人日记，支持查看详情和删除
+  时间线展示两人日记，支持查看详情和删除，支持评论
 -->
 <view class="diary-page">
   <!-- 搜索栏 -->
@@ -36,35 +36,89 @@
       class="diary-item {{item.role === 'creator' ? 'item-me' : 'item-partner'}}"
       wx:for="{{diaries}}"
       wx:key="_id"
-      bindtap="viewDetail"
-      data-id="{{item._id}}"
     >
-      <view class="diary-header">
-        <view class="diary-author">
-          <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill" class="author-avatar"></image>
-          <view wx:else class="author-avatar-default">💕</view>
-          <text class="author-nickname">{{item.nickname}}</text>
+      <view class="diary-main" bindtap="viewDetail" data-id="{{item._id}}">
+        <view class="diary-header">
+          <view class="diary-author">
+            <image wx:if="{{item.avatar}}" src="{{item.avatar}}" mode="aspectFill" class="author-avatar"></image>
+            <view wx:else class="author-avatar-default">💕</view>
+            <text class="author-nickname">{{item.nickname}}</text>
+          </view>
+          <view class="diary-date">{{item.date}}</view>
         </view>
-        <view class="diary-date">{{item.date}}</view>
+        <view class="diary-title" wx:if="{{item.title}}">{{item.title}}</view>
+        <view class="diary-content">{{item.content}}</view>
+        <!-- 图片缩略图 -->
+        <view class="diary-images" wx:if="{{item.images && item.images.length > 0}}">
+          <image
+            wx:for="{{item.images}}"
+            wx:for-item="img"
+            wx:key="index"
+            src="{{img}}"
+            mode="aspectFill"
+            class="diary-image"
+          ></image>
+        </view>
+        <view class="diary-footer">
+          <view class="diary-time">{{item.createdAt}}</view>
+          <view class="diary-actions" wx:if="{{item.isMine}}" catchtap="noop">
+            <text class="action-btn" bindtap="editDiary" data-id="{{item._id}}">编辑</text>
+            <text class="action-btn delete" bindtap="deleteDiary" data-id="{{item._id}}">删除</text>
+          </view>
+        </view>
       </view>
-      <view class="diary-title" wx:if="{{item.title}}">{{item.title}}</view>
-      <view class="diary-content">{{item.content}}</view>
-      <!-- 图片缩略图 -->
-      <view class="diary-images" wx:if="{{item.images && item.images.length > 0}}">
-        <image
-          wx:for="{{item.images}}"
-          wx:for-item="img"
-          wx:key="index"
-          src="{{img}}"
-          mode="aspectFill"
-          class="diary-image"
-        ></image>
-      </view>
-      <view class="diary-footer">
-        <view class="diary-time">{{item.createdAt}}</view>
-        <view class="diary-actions" wx:if="{{item.isMine}}" catchtap="noop">
-          <text class="action-btn" bindtap="editDiary" data-id="{{item._id}}">编辑</text>
-          <text class="action-btn delete" bindtap="deleteDiary" data-id="{{item._id}}">删除</text>
+
+      <!-- 评论区 -->
+      <view class="comment-section" catchtap="noop">
+        <!-- 评论入口条 -->
+        <view class="comment-toggle" bindtap="toggleComments" data-id="{{item._id}}">
+          <view class="comment-toggle-left">
+            <text class="comment-icon">💬</text>
+            <text class="comment-count-text">
+              {{commentsMap[item._id] && commentsMap[item._id].length ? commentsMap[item._id].length + '条评论' : '评论'}}
+            </text>
+            <view class="new-comment-dot" wx:if="{{newCommentDiaries[item._id]}}"></view>
+          </view>
+          <text class="comment-toggle-arrow">{{expandedComments[item._id] ? '收起 ▲' : '展开 ▼'}}</text>
+        </view>
+
+        <!-- 展开的评论列表 -->
+        <view class="comment-list" wx:if="{{expandedComments[item._id]}}">
+          <view
+            class="comment-item"
+            wx:for="{{commentsMap[item._id]}}"
+            wx:for-item="comment"
+            wx:key="_id"
+          >
+            <image wx:if="{{comment.avatar}}" src="{{comment.avatar}}" mode="aspectFill" class="comment-avatar"></image>
+            <view wx:else class="comment-avatar-default">💕</view>
+            <view class="comment-body">
+              <view class="comment-info">
+                <text class="comment-nickname">{{comment.nickname}}</text>
+                <text class="comment-time">{{comment.createdAt}}</text>
+              </view>
+              <text class="comment-content">{{comment.content}}</text>
+            </view>
+            <view class="comment-delete" wx:if="{{comment.isMine}}" catchtap="deleteComment" data-comment-id="{{comment._id}}" data-diary-id="{{item._id}}">✕</view>
+          </view>
+          <!-- 空评论提示 -->
+          <view class="comment-empty" wx:if="{{!commentsMap[item._id] || commentsMap[item._id].length === 0}}">
+            暂无评论，来说点什么吧~
+          </view>
+        </view>
+
+        <!-- 评论输入框 -->
+        <view class="comment-input-wrap" wx:if="{{expandedComments[item._id]}}">
+          <input
+            class="comment-input"
+            placeholder="写评论..."
+            value="{{commentText[item._id] || ''}}"
+            bindinput="onCommentInput"
+            data-id="{{item._id}}"
+            confirm-type="send"
+            bindconfirm="submitComment"
+          />
+          <button class="comment-submit-btn" bindtap="submitComment" data-id="{{item._id}}" loading="{{submittingComment[item._id]}}">发送</button>
         </view>
       </view>
     </view>
@@ -109,6 +163,51 @@
     <view class="detail-actions" wx:if="{{detailDiary.isMine}}">
       <button class="btn-edit" bindtap="editDiaryFromDetail">编辑</button>
       <button class="btn-delete" bindtap="deleteDiaryFromDetail">删除</button>
+    </view>
+
+    <!-- 详情弹窗的评论区 -->
+    <view class="detail-comment-section" catchtap="noop">
+      <view class="detail-comment-title">
+        <text>💬 评论</text>
+        <text class="detail-comment-count" wx:if="{{detailComments.length > 0}}">（{{detailComments.length}}）</text>
+      </view>
+
+      <!-- 评论列表 -->
+      <view class="comment-list">
+        <view
+          class="comment-item"
+          wx:for="{{detailComments}}"
+          wx:for-item="comment"
+          wx:key="_id"
+        >
+          <image wx:if="{{comment.avatar}}" src="{{comment.avatar}}" mode="aspectFill" class="comment-avatar"></image>
+          <view wx:else class="comment-avatar-default">💕</view>
+          <view class="comment-body">
+            <view class="comment-info">
+              <text class="comment-nickname">{{comment.nickname}}</text>
+              <text class="comment-time">{{comment.createdAt}}</text>
+            </view>
+            <text class="comment-content">{{comment.content}}</text>
+          </view>
+          <view class="comment-delete" wx:if="{{comment.isMine}}" catchtap="deleteDetailComment" data-comment-id="{{comment._id}}">✕</view>
+        </view>
+        <view class="comment-empty" wx:if="{{detailComments.length === 0 && !detailCommentLoading}}">
+          暂无评论，来说点什么吧~
+        </view>
+      </view>
+
+      <!-- 评论输入框 -->
+      <view class="comment-input-wrap">
+        <input
+          class="comment-input"
+          placeholder="写评论..."
+          value="{{detailCommentText}}"
+          bindinput="onDetailCommentInput"
+          confirm-type="send"
+          bindconfirm="submitDetailComment"
+        />
+        <button class="comment-submit-btn" bindtap="submitDetailComment" loading="{{detailSubmittingComment}}">发送</button>
+      </view>
     </view>
   </view>
 </view>

@@ -113,6 +113,14 @@ Page({
         }).then(function () {
           wx.hideLoading();
           wx.showToast({ title: '头像已更新', icon: 'success' });
+          // 清除全局缓存，确保其他页面刷新时获取最新头像
+          app.globalData.usersCache = null;
+          var pages = getCurrentPages();
+          for (var i = 0; i < pages.length; i++) {
+            if (pages[i].clearUserCache) {
+              pages[i].clearUserCache();
+            }
+          }
           that.loadUserInfo();
         }).catch(function (err) {
           wx.hideLoading();
@@ -153,6 +161,15 @@ Page({
       });
       this.setData({ showNicknameModal: false });
       wx.showToast({ title: '昵称已更新', icon: 'success' });
+      // 清除全局缓存，确保其他页面刷新时获取最新数据
+      app.globalData.usersCache = null;
+      // 通知日记列表页清除缓存
+      var pages = getCurrentPages();
+      for (var i = 0; i < pages.length; i++) {
+        if (pages[i].clearUserCache) {
+          pages[i].clearUserCache();
+        }
+      }
       this.loadUserInfo();
     } catch (err) {
       console.error(err);

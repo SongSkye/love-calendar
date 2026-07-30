@@ -107,7 +107,7 @@ Page({
 
   /**
    * 统一加载所有数据，一次查询 moods，其他从 globalData 缓存复用
-   * 替代原来的 loadMoods + loadAnniversaries + loadMoodStats 三个独立查询
+   * 缓存失效时自动查库兜底
    */
   async loadAllData() {
     const coupleId = app.globalData.coupleId;
@@ -115,8 +115,14 @@ Page({
     const db = app.getDb();
 
     try {
-      // 1. 从 globalData 缓存复用 users 数据（app.js setupUserState 已查过）
-      const usersCache = app.globalData.usersCache || [];
+      // 1. 获取用户映射（缓存优先，失效时查库）
+      var usersCache = app.globalData.usersCache;
+      if (!usersCache || usersCache.length === 0) {
+        try {
+          usersCache = (await db.collection('users').where({ coupleId: coupleId }).get()).data;
+          app.globalData.usersCache = usersCache;
+        } catch (e) { usersCache = []; }
+      }
       const userMap = {};
       usersCache.forEach(function (u) {
         var entry = { nickname: u.nickname, role: u.role };
@@ -124,8 +130,17 @@ Page({
         if (u.uid) userMap[u.uid] = entry;
       });
 
-      // 2. 从 globalData 缓存复用纪念日数据（app.js setupUserState 已查过）
-      const anniCache = app.globalData.anniversariesCache || [];
+      // 2. 获取纪念日数据（缓存优先，失效时查库）
+      var anniCache = app.globalData.anniversariesCache;
+      if (!anniCache || anniCache.length === 0) {
+        try {
+          anniCache = (await db.collection('anniversaries')
+            .where({ coupleId: coupleId })
+            .orderBy('date', 'asc')
+            .get()).data;
+          app.globalData.anniversariesCache = anniCache;
+        } catch (e) { anniCache = []; }
+      }
       if (anniCache.length > 0) {
         this.computeAnniversaries(anniCache);
       }

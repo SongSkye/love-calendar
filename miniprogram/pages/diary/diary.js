@@ -1,5 +1,5 @@
 /**
- * 日记列表页 - 支持搜索过滤，性能优化版
+ * 日记列表页 - 支持搜索过滤，性能优化版，含评论功能
  */
 const app = getApp();
 
@@ -17,6 +17,19 @@ Page({
     detailDiary: {},
     keyword: '',
     firstLoad: true,        // 是否首次加载
+
+    // 评论相关
+    expandedComments: {},   // 展开的评论 { diaryId: true }
+    commentsMap: {},        // 评论数据 { diaryId: [comments] }
+    commentLoading: {},     // 评论加载状态 { diaryId: true }
+    commentText: {},        // 评论输入框内容 { diaryId: 'xxx' }
+    submittingComment: {},  // 提交状态 { diaryId: true }
+    newCommentDiaries: {},  // 有新评论的日记 { diaryId: true }
+    detailComments: [],     // 详情弹窗的评论
+    detailCommentText: '',  // 详情弹窗的评论输入
+    detailCommentExpanded: false,
+    detailCommentLoading: false,
+    detailSubmittingComment: false,
   },
 
   onLoad() {
@@ -41,7 +54,7 @@ Page({
     if (cacheCoupleId !== app.globalData.coupleId) {
       userMapCache = null;
       cacheCoupleId = app.globalData.coupleId;
-      this.setData({ page: 1, diaries: [], hasMore: true, firstLoad: true });
+      this.setData({ page: 1, diaries: [], hasMore: true, firstLoad: true, commentsMap: {}, expandedComments: {} });
       this.loadDiaries();
     } else if (this.data.firstLoad) {
       // 首次加载
@@ -78,9 +91,11 @@ Page({
 
   /**
    * 清除用户缓存（对方加入/修改昵称后调用）
+   * 同时标记需要刷新，确保 onShow 时重新加载数据
    */
   clearUserCache: function () {
     userMapCache = null;
+    this.setData({ firstLoad: true });
   },
 
   /**
@@ -96,7 +111,7 @@ Page({
 
     var that = this;
     this._searchTimer = setTimeout(function () {
-      that.setData({ page: 1, diaries: [], hasMore: true });
+      that.setData({ page: 1, diaries: [], hasMore: true, commentsMap: {}, expandedComments: {} });
       that.loadDiaries();
     }, 300);
   },
@@ -105,7 +120,7 @@ Page({
    * 清除搜索
    */
   clearSearch() {
-    this.setData({ keyword: '', page: 1, diaries: [], hasMore: true });
+    this.setData({ keyword: '', page: 1, diaries: [], hasMore: true, commentsMap: {}, expandedComments: {} });
     this.loadDiaries();
   },
 
@@ -179,6 +194,9 @@ Page({
           hasMore: skip + pageSize < total,
           page: this.data.page + 1,
         });
+
+        // 批量加载评论
+        this.loadCommentsBatch(diaries);
       } else {
         // 普通模式：正常分页，只查一次 count
         var [countRes, res] = await Promise.all([
@@ -208,12 +226,231 @@ Page({
           hasMore: skip + pageSize < countRes.total,
           page: this.data.page + 1,
         });
+
+        // 批量加载评论
+        this.loadCommentsBatch(diaries);
       }
     } catch (err) {
       console.error('加载日记失败:', err);
     } finally {
       this.setData({ loading: false });
     }
+  },
+
+  /**
+   * 批量加载评论并检查新评论
+   * @param {Array} diaries - 日记列表
+   */
+  async loadCommentsBatch(diaries) {
+    if (!diaries || diaries.length === 0) return;
+    var db = app.getDb();
+    var _ = app._;
+    var diaryIds = diaries.map(function (d) { return d._id; });
+
+    try {
+      // 一次查询所有相关评论
+      var commentRes = await db.collection('comments')
+        .where({ diaryId: _.in(diaryIds) })
+        .orderBy('createdAt', 'asc')
+        .get();
+
+      var myUid = app.getUserId();
+      var userMap = userMapCache || await this.getUserMap();
+
+      // 按 diaryId 分组，附带用户信息
+      var map = this.data.commentsMap || {};
+      diaryIds.forEach(function (id) { map[id] = []; });
+      commentRes.data.forEach(function (c) {
+        if (map[c.diaryId]) {
+          var u = userMap[c.uid] || { nickname: '未知', role: '', avatar: '' };
+          map[c.diaryId].push({
+            ...c,
+            nickname: u.nickname,
+            avatar: u.avatar || '',
+            isMine: c.uid === myUid,
+          });
+        }
+      });
+
+      // 检查新评论
+      var newCommentDiaries = this.data.newCommentDiaries || {};
+      var lastReadTime = wx.getStorageSync('lastCommentReadTime') || '';
+
+      commentRes.data.forEach(function (c) {
+        if (c.uid !== myUid && c.createdAt > lastReadTime) {
+          newCommentDiaries[c.diaryId] = true;
+        }
+      });
+
+      this.setData({
+        commentsMap: map,
+        newCommentDiaries: newCommentDiaries,
+      });
+    } catch (err) {
+      console.error('加载评论失败:', err);
+    }
+  },
+
+  /**
+   * 展开/收起评论区
+   */
+  toggleComments(e) {
+    var diaryId = e.currentTarget.dataset.id;
+    var expanded = this.data.expandedComments || {};
+    var newCommentDiaries = this.data.newCommentDiaries || {};
+
+    if (expanded[diaryId]) {
+      // 收起
+      expanded[diaryId] = false;
+    } else {
+      // 展开 -> 标记为已读，清除新评论标记
+      expanded[diaryId] = true;
+      newCommentDiaries[diaryId] = false;
+      // 更新最后阅读时间
+      wx.setStorageSync('lastCommentReadTime', new Date().toISOString());
+    }
+
+    this.setData({
+      expandedComments: expanded,
+      newCommentDiaries: newCommentDiaries,
+    });
+  },
+
+  /**
+   * 评论输入框内容变化
+   */
+  onCommentInput(e) {
+    var diaryId = e.currentTarget.dataset.id;
+    var commentText = this.data.commentText || {};
+    commentText[diaryId] = e.detail.value;
+    this.setData({ commentText: commentText });
+  },
+
+  /**
+   * 提交评论
+   */
+  async submitComment(e) {
+    var diaryId = e.currentTarget.dataset.id;
+    var commentText = this.data.commentText || {};
+    var content = (commentText[diaryId] || '').trim();
+    if (!content) {
+      wx.showToast({ title: '请输入评论内容', icon: 'none' });
+      return;
+    }
+
+    var submitting = this.data.submittingComment || {};
+    if (submitting[diaryId]) return;
+    submitting[diaryId] = true;
+    this.setData({ submittingComment: submitting });
+
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    var myUid = app.getUserId();
+    var now = new Date().toISOString();
+
+    try {
+      // 写入评论
+      var addRes = await db.collection('comments').add({
+        data: {
+          diaryId: diaryId,
+          coupleId: coupleId,
+          uid: myUid,
+          content: content,
+          createdAt: now,
+        }
+      });
+
+      // 更新日记的 commentCount
+      try {
+        var diaryRes = await db.collection('diaries').doc(diaryId).get();
+        var currentCount = diaryRes.data.commentCount || 0;
+        await db.collection('diaries').doc(diaryId).update({
+          data: { commentCount: currentCount + 1 }
+        });
+      } catch (e) {
+        // 更新计数失败不影响评论本身
+        console.warn('更新 commentCount 失败:', e);
+      }
+
+      // 更新本地评论列表
+      var userMap = userMapCache || await this.getUserMap();
+      var u = userMap[myUid] || { nickname: '我', role: '', avatar: '' };
+      var newComment = {
+        _id: addRes._id,
+        diaryId: diaryId,
+        uid: myUid,
+        content: content,
+        createdAt: now,
+        nickname: u.nickname,
+        avatar: u.avatar || '',
+        isMine: true,
+      };
+
+      var commentsMap = this.data.commentsMap || {};
+      if (!commentsMap[diaryId]) commentsMap[diaryId] = [];
+      commentsMap[diaryId].push(newComment);
+
+      // 清空输入框
+      commentText[diaryId] = '';
+
+      this.setData({
+        commentsMap: commentsMap,
+        commentText: commentText,
+      });
+
+      wx.showToast({ title: '评论成功', icon: 'success' });
+    } catch (err) {
+      console.error('评论失败:', err);
+      wx.showToast({ title: '评论失败', icon: 'none' });
+    } finally {
+      submitting[diaryId] = false;
+      this.setData({ submittingComment: submitting });
+    }
+  },
+
+  /**
+   * 删除评论（仅自己的评论可删）
+   */
+  deleteComment(e) {
+    var that = this;
+    var commentId = e.currentTarget.dataset.commentId;
+    var diaryId = e.currentTarget.dataset.diaryId;
+
+    wx.showModal({
+      title: '删除确认',
+      content: '确定要删除这条评论吗？',
+      success: async function (res) {
+        if (!res.confirm) return;
+        var db = app.getDb();
+        try {
+          await db.collection('comments').doc(commentId).remove();
+
+          // 更新日记的 commentCount
+          try {
+            var diaryRes = await db.collection('diaries').doc(diaryId).get();
+            var currentCount = diaryRes.data.commentCount || 0;
+            await db.collection('diaries').doc(diaryId).update({
+              data: { commentCount: Math.max(0, currentCount - 1) }
+            });
+          } catch (e) {
+            console.warn('更新 commentCount 失败:', e);
+          }
+
+          // 更新本地评论列表
+          var commentsMap = that.data.commentsMap || {};
+          if (commentsMap[diaryId]) {
+            commentsMap[diaryId] = commentsMap[diaryId].filter(function (c) {
+              return c._id !== commentId;
+            });
+          }
+
+          that.setData({ commentsMap: commentsMap });
+          wx.showToast({ title: '已删除', icon: 'success' });
+        } catch (err) {
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
+      }
+    });
   },
 
   loadMore() { this.loadDiaries(); },
@@ -260,11 +497,162 @@ Page({
             avatar: userInfo.avatar,
             isMine: diary.uid === myUid,
           },
+          detailCommentExpanded: true,
+          detailCommentText: '',
+          detailComments: [],
         });
+
+        // 加载详情页的评论
+        this.loadDetailComments(id);
       }
     } catch (err) {
       console.error(err);
     }
+  },
+
+  /**
+   * 加载详情弹窗的评论
+   */
+  async loadDetailComments(diaryId) {
+    this.setData({ detailCommentLoading: true });
+    var db = app.getDb();
+    try {
+      var commentRes = await db.collection('comments')
+        .where({ diaryId: diaryId })
+        .orderBy('createdAt', 'asc')
+        .get();
+
+      var userMap = userMapCache || await this.getUserMap();
+      var myUid = app.getUserId();
+      var comments = commentRes.data.map(function (c) {
+        var u = userMap[c.uid] || { nickname: '未知', role: '', avatar: '' };
+        return {
+          ...c,
+          nickname: u.nickname,
+          avatar: u.avatar || '',
+          isMine: c.uid === myUid,
+        };
+      });
+
+      this.setData({ detailComments: comments });
+    } catch (err) {
+      console.error('加载详情评论失败:', err);
+    } finally {
+      this.setData({ detailCommentLoading: false });
+    }
+  },
+
+  /**
+   * 详情弹窗评论输入
+   */
+  onDetailCommentInput(e) {
+    this.setData({ detailCommentText: e.detail.value });
+  },
+
+  /**
+   * 详情弹窗提交评论
+   */
+  async submitDetailComment() {
+    var content = (this.data.detailCommentText || '').trim();
+    var diaryId = this.data.detailDiary._id;
+    if (!content) {
+      wx.showToast({ title: '请输入评论内容', icon: 'none' });
+      return;
+    }
+    if (this.data.detailSubmittingComment) return;
+    this.setData({ detailSubmittingComment: true });
+
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    var myUid = app.getUserId();
+    var now = new Date().toISOString();
+
+    try {
+      var addRes = await db.collection('comments').add({
+        data: {
+          diaryId: diaryId,
+          coupleId: coupleId,
+          uid: myUid,
+          content: content,
+          createdAt: now,
+        }
+      });
+
+      // 更新本地
+      var userMap = userMapCache || await this.getUserMap();
+      var u = userMap[myUid] || { nickname: '我', role: '', avatar: '' };
+      var newComment = {
+        _id: addRes._id,
+        diaryId: diaryId,
+        uid: myUid,
+        content: content,
+        createdAt: now,
+        nickname: u.nickname,
+        avatar: u.avatar || '',
+        isMine: true,
+      };
+
+      var detailComments = this.data.detailComments || [];
+      detailComments.push(newComment);
+
+      this.setData({
+        detailComments: detailComments,
+        detailCommentText: '',
+      });
+
+      // 同步更新列表页的评论缓存
+      var commentsMap = this.data.commentsMap || {};
+      if (!commentsMap[diaryId]) commentsMap[diaryId] = [];
+      commentsMap[diaryId].push(newComment);
+      this.setData({ commentsMap: commentsMap });
+
+      wx.showToast({ title: '评论成功', icon: 'success' });
+    } catch (err) {
+      console.error('评论失败:', err);
+      wx.showToast({ title: '评论失败', icon: 'none' });
+    } finally {
+      this.setData({ detailSubmittingComment: false });
+    }
+  },
+
+  /**
+   * 详情弹窗删除评论
+   */
+  deleteDetailComment(e) {
+    var that = this;
+    var commentId = e.currentTarget.dataset.commentId;
+    var diaryId = this.data.detailDiary._id;
+
+    wx.showModal({
+      title: '删除确认',
+      content: '确定要删除这条评论吗？',
+      success: async function (res) {
+        if (!res.confirm) return;
+        var db = app.getDb();
+        try {
+          await db.collection('comments').doc(commentId).remove();
+
+          // 更新本地详情评论列表
+          var detailComments = that.data.detailComments.filter(function (c) {
+            return c._id !== commentId;
+          });
+          that.setData({ detailComments: detailComments });
+
+          // 同步更新列表页缓存
+          var commentsMap = that.data.commentsMap || {};
+          if (commentsMap[diaryId]) {
+            commentsMap[diaryId] = commentsMap[diaryId].filter(function (c) {
+              return c._id !== commentId;
+            });
+            that.setData({ commentsMap: commentsMap });
+          }
+
+          wx.showToast({ title: '已删除', icon: 'success' });
+        } catch (err) {
+          wx.showToast({ title: '删除失败', icon: 'none' });
+        }
+      }
+    });
   },
 
   closeDetail() { this.setData({ showDetail: false }); },
@@ -295,7 +683,7 @@ Page({
           await app.getDb().collection('diaries').doc(id).remove();
           wx.showToast({ title: '已删除', icon: 'success' });
           userMapCache = null;
-          that.setData({ page: 1, diaries: [], hasMore: true });
+          that.setData({ page: 1, diaries: [], hasMore: true, commentsMap: {}, expandedComments: {} });
           that.loadDiaries();
         } catch (err) {
           wx.showToast({ title: '删除失败', icon: 'none' });

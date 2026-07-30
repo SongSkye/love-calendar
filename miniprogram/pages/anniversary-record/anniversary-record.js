@@ -270,6 +270,8 @@ Page({
       }
 
       wx.showToast({ title: this.data.isRecord ? '记录已保存' : '保存成功', icon: 'success' });
+      // 清除纪念日缓存，确保日历页和纪念日列表页重新加载
+      app.globalData.anniversariesCache = null;
       setTimeout(function () {
         if (anniversaryId && !this.data.isEdit) {
           // 跳转到详情页
