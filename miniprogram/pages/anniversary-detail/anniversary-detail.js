@@ -98,6 +98,7 @@ Page({
         var entry = { nickname: u.nickname };
         if (u.openid) userMap[u.openid] = entry;
         if (u.uid) userMap[u.uid] = entry;  // 兼容旧数据
+        if (u._openid) userMap[u._openid] = entry;
       });
 
       var records = recordsRes.data.map(function (item) {

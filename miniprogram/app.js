@@ -1,10 +1,10 @@
 /**
  * 恋爱日历小程序 - 应用入口
- * 用户标识：优先微信 openid（Cloudflare Worker），兜底本地 UUID
- * 三层兜底策略：Worker 成功 → UUID 降级 → 权限兜底
+ * 用户标识：微信 openid（Cloudflare Worker），兜底本地 UUID
+ * 启动优化：openid + 绑定状态缓存到本地，秒开跳转
  */
 
-// Cloudflare Worker URL（部署后替换为实际地址）
+// Cloudflare Worker URL
 var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getOpenid';
 
 App({
@@ -22,29 +22,87 @@ App({
     this.db = wx.cloud.database();
     this._ = this.db.command;
 
-    // 全局数据（含缓存，避免各页面重复查询）
     this.globalData = {
-      openid: '',           // 微信 openid（Worker 获取后写入）
-      myUid: '',            // 本地 UUID（兜底）
+      openid: '',
+      myUid: '',
       userInfo: null,
       partnerInfo: null,
       coupleId: null,
       isBound: false,
       togetherDate: null,
       openidReady: false,
-      useOpenid: false,         // 是否使用 openid 模式
-      usersCache: null,         // users 表缓存
-      anniversariesCache: null, // 纪念日列表缓存
+      useOpenid: false,
+      usersCache: null,
+      anniversariesCache: null,
     };
 
-    // 初始化本地 UUID（兜底用）
+    // 初始化本地 UUID
     this.initMyUid();
-    // 尝试通过 Worker 获取 openid
-    this.fetchOpenid();
+
+    // 先从缓存恢复状态（秒开），再后台刷新
+    var restored = this.restoreFromCache();
+    if (restored) {
+      // 缓存命中 → 立即就绪，后台静默刷新
+      this.globalData.openidReady = true;
+      this.fetchOpenid(); // 后台刷新，不阻塞
+    } else {
+      // 首次启动或无缓存 → 走完整流程
+      this.fetchOpenid().then(function () {
+        // 刷新完成后缓存状态
+        this.saveToCache();
+      }.bind(this));
+    }
   },
 
   /**
-   * 初始化本地 UUID（云函数未部署时的兜底方案）
+   * 从 localStorage 恢复 openid 和绑定状态
+   * @returns {boolean} 是否恢复成功
+   */
+  restoreFromCache: function () {
+    try {
+      var cached = wx.getStorageSync('love_calendar_state');
+      if (!cached) return false;
+
+      // 恢复 openid（同一微信号永远不变，100% 可靠）
+      if (cached.openid) {
+        this.globalData.openid = cached.openid;
+        this.globalData.useOpenid = true;
+      }
+
+      // 恢复绑定状态
+      if (cached.isBound && cached.coupleId) {
+        this.globalData.isBound = true;
+        this.globalData.coupleId = cached.coupleId;
+        this.globalData.userInfo = cached.userInfo || null;
+        this.globalData.partnerInfo = cached.partnerInfo || null;
+        this.globalData.togetherDate = cached.togetherDate || null;
+        console.log('⚡ 从缓存恢复状态，秒开');
+      }
+
+      return true;
+    } catch (e) {
+      return false;
+    }
+  },
+
+  /**
+   * 保存 openid 和绑定状态到 localStorage
+   */
+  saveToCache: function () {
+    try {
+      wx.setStorageSync('love_calendar_state', {
+        openid: this.globalData.openid,
+        isBound: this.globalData.isBound,
+        coupleId: this.globalData.coupleId,
+        userInfo: this.globalData.userInfo,
+        partnerInfo: this.globalData.partnerInfo,
+        togetherDate: this.globalData.togetherDate,
+      });
+    } catch (e) {}
+  },
+
+  /**
+   * 初始化本地 UUID（兜底用）
    */
   initMyUid: function () {
     var uid = wx.getStorageSync('love_calendar_uid');
@@ -55,9 +113,6 @@ App({
     this.globalData.myUid = uid;
   },
 
-  /**
-   * 生成 UUID v4
-   */
   generateUUID: function () {
     return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
       var r = Math.random() * 16 | 0;
@@ -68,11 +123,11 @@ App({
 
   /**
    * 通过 wx.login + Cloudflare Worker 获取微信 openid
-   * 失败时降级为 UUID 模式，不丢数据
+   * 失败时降级为 UUID 模式。支持后台静默刷新
    */
   async fetchOpenid() {
     try {
-      // 1. 通过 wx.login 获取临时 code
+      // 1. wx.login 获取临时 code
       var loginRes = await new Promise(function (resolve, reject) {
         wx.login({ success: resolve, fail: reject });
       });
@@ -94,14 +149,12 @@ App({
         var openid = resp.data.data.openid;
         this.globalData.openid = openid;
         this.globalData.useOpenid = true;
-        // 持久化 openid，换手机后虽然本地存储会丢，但 Worker 会重新获取
         wx.setStorageSync('love_calendar_openid', openid);
         console.log('✅ openid 模式已启用');
       } else {
         throw new Error('Worker 返回异常: ' + JSON.stringify(resp.data));
       }
     } catch (err) {
-      // 降级：Worker 不可用 → 使用 UUID 模式
       console.warn('⚠️ Worker 获取 openid 失败，降级 UUID 模式:', err.message || err);
       this.globalData.useOpenid = false;
     }
@@ -110,9 +163,6 @@ App({
     this.globalData.openidReady = true;
   },
 
-  /**
-   * 获取当前用户标识（openid 或 UUID）
-   */
   getUserId: function () {
     if (this.globalData.useOpenid && this.globalData.openid) {
       return this.globalData.openid;
@@ -120,33 +170,24 @@ App({
     return this.globalData.myUid;
   },
 
-  /**
-   * 获取数据库实例
-   */
   getDb: function () {
     return this.db;
   },
 
   /**
    * 检查用户绑定状态（三层兜底）
-   * 第一层：openid 模式 → 按 openid 查 DB → 找不到则权限兜底补全
-   * 第二层：UUID 模式 → 按 uid 查 DB
-   * 第三层：权限兜底 → db.get() 不加条件，系统按 _openid 过滤
    */
   checkBindStatus: function () {
     var app = this;
     var uid = app.getUserId();
     var db = app.getDb();
 
-    // openid 模式：直接查数据库（不再依赖云函数）
     if (app.globalData.useOpenid) {
       var openid = app.globalData.openid;
       return db.collection('users').where({ openid: openid }).get().then(function (res) {
         if (res.data.length > 0) {
           return app.setupUserState(res.data[0]);
         }
-        // 兜底：DB 中只有旧 UUID 记录（没有 openid 字段）
-        // 利用权限系统自动查找，找到后补全 openid
         return db.collection('users').get().then(function (fb) {
           if (fb.data.length > 0) {
             var user = fb.data[0];
@@ -166,12 +207,10 @@ App({
       });
     }
 
-    // UUID 模式：直接查数据库
     return db.collection('users').where({ uid: uid }).get().then(function (res) {
       if (res.data.length > 0) {
         return app.setupUserState(res.data[0]);
       }
-      // 兜底：UUID 丢失（清缓存/重装小程序），利用数据库"仅创建者可读写"权限
       return db.collection('users').get().then(function (fallbackRes) {
         if (fallbackRes.data.length > 0) {
           var user = fallbackRes.data[0];
@@ -200,11 +239,9 @@ App({
     app.globalData.coupleId = user.coupleId;
     app.globalData.isBound = true;
 
-    // 获取对方信息 + 缓存 users 表数据，避免各页面重复查询
     return db.collection('users').where({
       coupleId: user.coupleId
     }).get().then(function (partnerRes) {
-      // 缓存 users 数据，供日历页等复用
       app.globalData.usersCache = partnerRes.data;
 
       var partner = null;
@@ -212,13 +249,13 @@ App({
         var u = partnerRes.data[i];
         var isMe = (u.openid && u.openid === myId) ||
                    (u.uid && u.uid === myId) ||
+                   (u._openid && u._openid === myId) ||
                    (u._id === user._id);
         if (!isMe) { partner = u; break; }
       }
       if (partner) {
         app.globalData.partnerInfo = partner;
       }
-      // 获取纪念日列表 + 缓存，供日历页复用
       return db.collection('anniversaries').where({
         coupleId: user.coupleId
       }).orderBy('date', 'asc').get().then(function (anniRes) {
@@ -226,8 +263,26 @@ App({
         if (anniRes.data.length > 0) {
           app.globalData.togetherDate = anniRes.data[0].date;
         }
+        // 后台刷新后更新缓存
+        app.saveToCache();
         return true;
       });
     });
-  }
+  },
+
+  /**
+   * 保存状态到缓存（供外部调用，如解绑后清除）
+   */
+  saveToCache: function () {
+    try {
+      wx.setStorageSync('love_calendar_state', {
+        openid: this.globalData.openid,
+        isBound: this.globalData.isBound,
+        coupleId: this.globalData.coupleId,
+        userInfo: this.globalData.userInfo,
+        partnerInfo: this.globalData.partnerInfo,
+        togetherDate: this.globalData.togetherDate,
+      });
+    } catch (e) {}
+  },
 });

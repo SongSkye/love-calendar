@@ -51,7 +51,7 @@ Page({
       var partner = null;
       for (var i = 0; i < partnerRes.data.length; i++) {
         var u = partnerRes.data[i];
-        var isMe = (u.openid && u.openid === userId) || (u.uid && u.uid === userId) || (user._id === u._id);
+        var isMe = (u.openid && u.openid === userId) || (u.uid && u.uid === userId) || (u._openid && u._openid === userId) || (user._id === u._id);
         if (!isMe) { partner = u; break; }
       }
       if (partner) {
@@ -234,6 +234,8 @@ Page({
             app.globalData.coupleId = null;
             app.globalData.isBound = false;
             app.globalData.togetherDate = null;
+            // 清除启动缓存，下次重新走完整流程
+            wx.removeStorageSync('love_calendar_state');
 
             wx.hideLoading();
             wx.showToast({ title: '已解绑', icon: 'success' });

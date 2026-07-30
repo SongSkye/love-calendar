@@ -66,7 +66,7 @@ Page({
 
   /**
    * 获取用户信息映射（带缓存，只查一次）
-   * 注意：小程序 <image> 原生支持 cloud:// 路径，无需转换
+   * 头像 cloud:// 需转临时链接，否则对方看不到
    */
   async getUserMap() {
     var coupleId = app.globalData.coupleId;
@@ -82,7 +82,29 @@ Page({
       var entry = { nickname: u.nickname, role: u.role, avatar: u.avatar || '' };
       if (u.openid) map[u.openid] = entry;
       if (u.uid) map[u.uid] = entry;
+      if (u._openid) map[u._openid] = entry;
     });
+
+    // 转换 cloud:// 头像为临时链接（跨用户访问必须）
+    var cloudAvatars = userRes.data
+      .filter(function (u) { return u.avatar && u.avatar.indexOf('cloud://') === 0; })
+      .map(function (u) { return u.avatar; });
+
+    if (cloudAvatars.length > 0) {
+      try {
+        var tempRes = await wx.cloud.getTempFileURL({ fileList: cloudAvatars });
+        var urlMap = {};
+        tempRes.fileList.forEach(function (f) { urlMap[f.fileID] = f.tempFileURL; });
+        // 更新 map 中所有引用该头像的 entry
+        Object.keys(map).forEach(function (key) {
+          if (map[key].avatar && urlMap[map[key].avatar]) {
+            map[key].avatar = urlMap[map[key].avatar];
+          }
+        });
+      } catch (e) {
+        console.warn('转换头像临时链接失败:', e);
+      }
+    }
 
     userMapCache = map;
     cacheCoupleId = coupleId;
@@ -179,13 +201,13 @@ Page({
         var pageData = allData.slice(skip, skip + pageSize);
 
         var diaries = pageData.map(function (item) {
-          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown', avatar: '' };
+          var u = userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
             avatar: u.avatar || '',
-            isMine: item.uid === myUid,
+            isMine: (item.uid === myUid) || (item.openid === myUid),
           };
         });
 
@@ -211,13 +233,13 @@ Page({
         ]);
 
         var diaries = res.data.map(function (item) {
-          var u = userMap[item.uid] || { nickname: '未知', role: 'unknown', avatar: '' };
+          var u = userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
             avatar: u.avatar || '',
-            isMine: item.uid === myUid,
+            isMine: (item.uid === myUid) || (item.openid === myUid),
           };
         });
 
@@ -262,12 +284,13 @@ Page({
       diaryIds.forEach(function (id) { map[id] = []; });
       commentRes.data.forEach(function (c) {
         if (map[c.diaryId]) {
-          var u = userMap[c.uid] || { nickname: '未知', role: '', avatar: '' };
+          var commentUserId = c.uid || c.openid;
+          var u = userMap[commentUserId] || { nickname: '未知', role: '', avatar: '' };
           map[c.diaryId].push({
             ...c,
             nickname: u.nickname,
             avatar: u.avatar || '',
-            isMine: c.uid === myUid,
+            isMine: commentUserId === myUid,
           });
         }
       });
@@ -277,7 +300,8 @@ Page({
       var lastReadTime = wx.getStorageSync('lastCommentReadTime') || '';
 
       commentRes.data.forEach(function (c) {
-        if (c.uid !== myUid && c.createdAt > lastReadTime) {
+        var commentUserId = c.uid || c.openid;
+        if (commentUserId !== myUid && c.createdAt > lastReadTime) {
           newCommentDiaries[c.diaryId] = true;
         }
       });
@@ -471,17 +495,19 @@ Page({
       if (res.data) {
         var diary = res.data;
         var myUid = app.getUserId();
+        // 兼容 uid 和 openid 两种字段名
+        var diaryUserId = diary.uid || diary.openid;
 
         // 优先使用缓存的用户信息，避免重复查库
-        var userInfo = userMapCache && userMapCache[diary.uid]
-          ? userMapCache[diary.uid]
+        var userInfo = (userMapCache && (userMapCache[diaryUserId]))
+          ? userMapCache[diaryUserId]
           : null;
 
         if (!userInfo) {
-          // 缓存未命中时才查库
+          // 缓存未命中时才查库，兼容 uid 和 openid 两种字段
           var _ = app._;
           var userRes = await db.collection('users').where(
-            _.or([{ openid: diary.uid }, { uid: diary.uid }])
+            _.or([{ openid: diaryUserId }, { uid: diaryUserId }])
           ).get();
           userInfo = userRes.data.length > 0
             ? { nickname: userRes.data[0].nickname, role: userRes.data[0].role, avatar: userRes.data[0].avatar || '' }
@@ -495,7 +521,7 @@ Page({
             nickname: userInfo.nickname,
             role: userInfo.role,
             avatar: userInfo.avatar,
-            isMine: diary.uid === myUid,
+            isMine: diaryUserId === myUid,
           },
           detailCommentExpanded: true,
           detailCommentText: '',
@@ -525,12 +551,13 @@ Page({
       var userMap = userMapCache || await this.getUserMap();
       var myUid = app.getUserId();
       var comments = commentRes.data.map(function (c) {
-        var u = userMap[c.uid] || { nickname: '未知', role: '', avatar: '' };
+        var commentUserId = c.uid || c.openid;
+        var u = userMap[commentUserId] || { nickname: '未知', role: '', avatar: '' };
         return {
           ...c,
           nickname: u.nickname,
           avatar: u.avatar || '',
-          isMine: c.uid === myUid,
+          isMine: commentUserId === myUid,
         };
       });
 

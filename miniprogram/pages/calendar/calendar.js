@@ -128,6 +128,7 @@ Page({
         var entry = { nickname: u.nickname, role: u.role };
         if (u.openid) userMap[u.openid] = entry;
         if (u.uid) userMap[u.uid] = entry;
+        if (u._openid) userMap[u._openid] = entry;
       });
 
       // 2. 获取纪念日数据（缓存优先，失效时查库）
