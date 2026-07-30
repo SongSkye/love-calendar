@@ -2,6 +2,7 @@
  * 我的页面 - 支持修改头像和昵称
  * 用户标识：微信 openid
  */
+const util = require('../../utils/util');
 const app = getApp();
 
 Page({
@@ -14,6 +15,12 @@ Page({
   },
 
   onShow() {
+    // 等待 openid 获取完成
+    if (!app.globalData.openidReady) {
+      var that = this;
+      setTimeout(function () { that.onShow(); }, 300);
+      return;
+    }
     if (!app.globalData.isBound) {
       app.checkBindStatus().then(function (bound) {
         if (!bound) { wx.reLaunch({ url: '/pages/welcome/welcome' }); }
@@ -77,13 +84,13 @@ Page({
    */
   convertAvatar: function (fileID, key) {
     var that = this;
-    wx.cloud.getTempFileURL({ fileList: [fileID] }).then(function (res) {
-      if (res.fileList[0] && res.fileList[0].tempFileURL) {
+    util.convertCloudFileIDs([fileID]).then(function (urlMap) {
+      if (urlMap[fileID]) {
         var update = {};
-        update[key] = Object.assign({}, that.data[key], { avatar: res.fileList[0].tempFileURL });
+        update[key] = Object.assign({}, that.data[key], { avatar: urlMap[fileID] });
         that.setData(update);
       }
-    }).catch(function () {});
+    });
   },
 
   /**
@@ -91,6 +98,8 @@ Page({
    */
   changeAvatar() {
     var that = this;
+    // 在上传前保存旧头像 fileID，避免异步期间 userInfo 被刷新导致误删
+    var oldAvatar = that.data.userInfo.avatar || '';
     wx.chooseImage({
       count: 1,
       sizeType: ['compressed'],
@@ -102,8 +111,8 @@ Page({
           filePath: res.tempFilePaths[0],
         }).then(function (uploadRes) {
           // 删除旧头像
-          if (that.data.userInfo.avatar) {
-            wx.cloud.deleteFile({ fileList: [that.data.userInfo.avatar] }).catch(function () {});
+          if (oldAvatar) {
+            wx.cloud.deleteFile({ fileList: [oldAvatar] }).catch(function () {});
           }
           // 更新数据库
           var db = app.getDb();
@@ -181,6 +190,15 @@ Page({
     wx.setClipboardData({
       data: this.data.inviteCode,
       success: function () { wx.showToast({ title: '已复制', icon: 'success' }); }
+    });
+  },
+
+  shareApp() {
+    wx.showModal({
+      title: '分享给TA',
+      content: '请点击右上角「···」按钮，选择「发送给朋友」即可分享',
+      showCancel: false,
+      confirmText: '知道了',
     });
   },
 

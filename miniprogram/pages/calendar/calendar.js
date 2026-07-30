@@ -79,8 +79,23 @@ Page({
     this.setData({ calendarGrid: grid });
   },
 
+  /**
+   * 切换到上个月，限制不超过纪念日最早日期所在年份
+   */
   prevMonth() {
     let { currentYear, currentMonth } = this.data;
+
+    // 获取下限：纪念日中最早日期的年份
+    var minYear = new Date().getFullYear() - 3;
+    var togetherDate = app.globalData.togetherDate;
+    if (togetherDate) {
+      minYear = new Date(togetherDate).getFullYear();
+    }
+
+    if (currentYear < minYear || (currentYear === minYear && currentMonth <= 1)) {
+      return;
+    }
+
     if (currentMonth === 1) {
       this.setData({ currentYear: currentYear - 1, currentMonth: 12 });
     } else {

@@ -1,6 +1,7 @@
 /**
  * 纪念日列表页 - 带封面图
  */
+const util = require('../../utils/util');
 const app = getApp();
 
 Page({
@@ -10,6 +11,12 @@ Page({
   },
 
   onShow() {
+    // 等待 openid 获取完成
+    if (!app.globalData.openidReady) {
+      var that = this;
+      setTimeout(function () { that.onShow(); }, 300);
+      return;
+    }
     if (!app.globalData.isBound) {
       app.checkBindStatus().then(function (bound) {
         if (!bound) { wx.reLaunch({ url: '/pages/welcome/welcome' }); }
@@ -64,11 +71,7 @@ Page({
         .map(function (item) { return item.coverImage; });
 
       if (fileIds.length > 0) {
-        wx.cloud.getTempFileURL({ fileList: fileIds }).then(function (tempRes) {
-          const urlMap = {};
-          tempRes.fileList.forEach(function (f) {
-            urlMap[f.fileID] = f.tempFileURL;
-          });
+        util.convertCloudFileIDs(fileIds).then(function (urlMap) {
           const updated = list.map(function (item) {
             if (item.coverImage && urlMap[item.coverImage]) {
               item.coverImage = urlMap[item.coverImage];
@@ -76,9 +79,7 @@ Page({
             return item;
           });
           this.setData({ anniversaries: updated });
-        }.bind(this)).catch(function (err) {
-          console.warn('获取封面图临时链接失败:', err);
-        });
+        }.bind(this));
       }
     } catch (err) {
       console.error('加载纪念日失败:', err);

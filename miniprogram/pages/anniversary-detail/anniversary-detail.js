@@ -1,6 +1,7 @@
 /**
  * 纪念日详情页 - 历史今日
  */
+const util = require('../../utils/util');
 const app = getApp();
 
 /**
@@ -75,12 +76,12 @@ Page({
 
       // 封面图转临时链接
       if (enriched.coverImage && enriched.coverImage.indexOf('cloud://') === 0) {
-        wx.cloud.getTempFileURL({ fileList: [enriched.coverImage] }).then(function (tempRes) {
-          if (tempRes.fileList[0] && tempRes.fileList[0].tempFileURL) {
-            enriched.coverImage = tempRes.fileList[0].tempFileURL;
+        util.convertCloudFileIDs([enriched.coverImage]).then(function (urlMap) {
+          if (urlMap[enriched.coverImage]) {
+            enriched.coverImage = urlMap[enriched.coverImage];
             this.setData({ anniversary: enriched });
           }
-        }.bind(this)).catch(function () {});
+        }.bind(this));
       }
 
       // 获取历史记录
@@ -125,9 +126,7 @@ Page({
         }
       });
       if (allImages.length > 0) {
-        wx.cloud.getTempFileURL({ fileList: allImages }).then(function (tempRes) {
-          var urlMap = {};
-          tempRes.fileList.forEach(function (f) { urlMap[f.fileID] = f.tempFileURL; });
+        util.convertCloudFileIDs(allImages).then(function (urlMap) {
           records.forEach(function (item) {
             if (item.images) {
               item.images = item.images.map(function (img) {
@@ -136,7 +135,7 @@ Page({
             }
           });
           this.setData({ records: records });
-        }.bind(this)).catch(function () {});
+        }.bind(this));
       }
 
     } catch (err) {

@@ -190,6 +190,29 @@ function formatDateTime(dateStr) {
   return `${year}年${month}月${day}日 ${hour}:${minute}`;
 }
 
+/**
+ * 将云存储 fileID（cloud://）批量转换为临时链接
+ * 使用场景：云存储文件不能直接用于 <image> 标签，需先转为临时 HTTPS 链接
+ * @param {Array<string>} fileIds - cloud:// 格式的 fileID 数组
+ * @returns {Promise<Object>} fileID -> tempFileURL 的映射对象
+ */
+async function convertCloudFileIDs(fileIds) {
+  if (!fileIds || fileIds.length === 0) return {};
+  try {
+    const res = await wx.cloud.getTempFileURL({ fileList: fileIds });
+    const map = {};
+    res.fileList.forEach(function (f) {
+      if (f.tempFileURL) {
+        map[f.fileID] = f.tempFileURL;
+      }
+    });
+    return map;
+  } catch (e) {
+    console.warn('转换云存储临时链接失败:', e);
+    return {};
+  }
+}
+
 module.exports = {
   formatDate,
   getToday,
@@ -202,5 +225,6 @@ module.exports = {
   getMoodOptions,
   formatRelativeDate,
   formatDateTime,
+  convertCloudFileIDs,
   MOOD_MAP,
 };

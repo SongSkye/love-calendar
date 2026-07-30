@@ -96,8 +96,21 @@ Page({
         return;
       }
 
-      // 生成唯一邀请码
-      var inviteCode = this.genCode();
+      // 生成唯一邀请码（最多重试5次，避免碰撞）
+      var inviteCode = '';
+      var isUnique = false;
+      for (var attempt = 0; attempt < 5; attempt++) {
+        var code = this.genCode();
+        var checkRes = await db.collection('couples').where({ inviteCode: code }).get();
+        if (checkRes.data.length === 0) {
+          inviteCode = code;
+          isUnique = true;
+          break;
+        }
+      }
+      if (!isUnique) {
+        inviteCode = this.genCode(); // 兜底，碰撞概率极低
+      }
 
       // 创建情侣空间
       var coupleRes = await db.collection('couples').add({

@@ -1,6 +1,7 @@
 /**
  * 日记列表页 - 支持搜索过滤，性能优化版，含评论功能
  */
+const util = require('../../utils/util');
 const app = getApp();
 
 // 页面级缓存：避免重复查询
@@ -92,9 +93,7 @@ Page({
 
     if (cloudAvatars.length > 0) {
       try {
-        var tempRes = await wx.cloud.getTempFileURL({ fileList: cloudAvatars });
-        var urlMap = {};
-        tempRes.fileList.forEach(function (f) { urlMap[f.fileID] = f.tempFileURL; });
+        var urlMap = await util.convertCloudFileIDs(cloudAvatars);
         // 更新 map 中所有引用该头像的 entry
         Object.keys(map).forEach(function (key) {
           if (map[key].avatar && urlMap[map[key].avatar]) {
@@ -281,7 +280,7 @@ Page({
 
       // 按 diaryId 分组，附带用户信息
       var map = this.data.commentsMap || {};
-      diaryIds.forEach(function (id) { map[id] = []; });
+      diaryIds.forEach(function (id) { if (!map[id]) map[id] = []; });
       commentRes.data.forEach(function (c) {
         if (map[c.diaryId]) {
           var commentUserId = c.uid || c.openid;
@@ -627,6 +626,17 @@ Page({
         detailCommentText: '',
       });
 
+      // 更新日记的 commentCount
+      try {
+        var diaryRes = await db.collection('diaries').doc(diaryId).get();
+        var currentCount = diaryRes.data.commentCount || 0;
+        await db.collection('diaries').doc(diaryId).update({
+          data: { commentCount: currentCount + 1 }
+        });
+      } catch (e) {
+        console.warn('更新 commentCount 失败:', e);
+      }
+
       // 同步更新列表页的评论缓存
       var commentsMap = this.data.commentsMap || {};
       if (!commentsMap[diaryId]) commentsMap[diaryId] = [];
@@ -658,6 +668,17 @@ Page({
         var db = app.getDb();
         try {
           await db.collection('comments').doc(commentId).remove();
+
+          // 更新日记的 commentCount
+          try {
+            var diaryRes = await db.collection('diaries').doc(diaryId).get();
+            var currentCount = diaryRes.data.commentCount || 0;
+            await db.collection('diaries').doc(diaryId).update({
+              data: { commentCount: Math.max(0, currentCount - 1) }
+            });
+          } catch (e) {
+            console.warn('更新 commentCount 失败:', e);
+          }
 
           // 更新本地详情评论列表
           var detailComments = that.data.detailComments.filter(function (c) {

@@ -188,7 +188,8 @@ App({
         if (res.data.length > 0) {
           return app.setupUserState(res.data[0]);
         }
-        return db.collection('users').get().then(function (fb) {
+        // 按 _openid 系统字段查找（比 get() 全量更精确），避免取到别人的数据
+        return db.collection('users').where({ _openid: openid }).get().then(function (fb) {
           if (fb.data.length > 0) {
             var user = fb.data[0];
             console.log('通过权限兜底找回旧记录，自动补全 openid');
@@ -268,21 +269,5 @@ App({
         return true;
       });
     });
-  },
-
-  /**
-   * 保存状态到缓存（供外部调用，如解绑后清除）
-   */
-  saveToCache: function () {
-    try {
-      wx.setStorageSync('love_calendar_state', {
-        openid: this.globalData.openid,
-        isBound: this.globalData.isBound,
-        coupleId: this.globalData.coupleId,
-        userInfo: this.globalData.userInfo,
-        partnerInfo: this.globalData.partnerInfo,
-        togetherDate: this.globalData.togetherDate,
-      });
-    } catch (e) {}
   },
 });

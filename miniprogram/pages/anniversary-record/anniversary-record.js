@@ -240,8 +240,8 @@ Page({
         anniversaryId = res._id;
       }
 
-      // 保存记录（使用选中的年份）
-      if (this.data.isRecord || this.data.recordContent || this.data.recordImages.length > 0) {
+      // 保存记录（仅在记录模式下且用户填写了内容才保存）
+      if (this.data.isRecord && (this.data.recordContent || this.data.recordImages.length > 0)) {
         var recordYear = this.data.recordYear || this.data.currentYear;
         var recordData = {
           content: this.data.recordContent.trim(),
