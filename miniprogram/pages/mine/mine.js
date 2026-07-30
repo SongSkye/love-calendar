@@ -199,54 +199,64 @@ Page({
    */
   unbindSpace() {
     var that = this;
+    // 第一次确认
     wx.showModal({
-      title: '确认解绑',
-      content: '解绑后，你的所有数据将被删除。\n\n如果你是创建者，整个空间的数据都会被清除。\n\n确定要解绑吗？',
-      confirmText: '确定解绑',
+      title: '⚠️ 危险操作',
+      content: '解绑后，你的所有数据将被删除。\n\n如果你是创建者，整个空间的数据都会被清除。\n\n是否继续？',
+      confirmText: '继续',
       confirmColor: '#FF6B81',
-      success: async function (res) {
-        if (res.confirm) {
-          try {
-            wx.showLoading({ title: '解绑中...' });
-            var db = app.getDb();
-            var coupleId = app.globalData.coupleId;
-            var userInfo = app.globalData.userInfo;
+      success: function (modalRes) {
+        if (!modalRes.confirm) return;
+        // 第二次确认
+        wx.showModal({
+          title: '⚠️ 再次确认',
+          content: '数据删除后无法恢复，确定要解绑吗？',
+          confirmText: '确认解绑',
+          confirmColor: '#FF6B81',
+          success: async function (res) {
+            if (!res.confirm) return;
+            try {
+              wx.showLoading({ title: '解绑中...' });
+              var db = app.getDb();
+              var coupleId = app.globalData.coupleId;
+              var userInfo = app.globalData.userInfo;
 
-            if (userInfo.role === 'creator') {
-              // 创建者解绑：删除所有数据
-              await db.collection('moods').where({ coupleId: coupleId }).remove();
-              await db.collection('diaries').where({ coupleId: coupleId }).remove();
-              await db.collection('anniversary_records').where({ coupleId: coupleId }).remove();
-              await db.collection('anniversaries').where({ coupleId: coupleId }).remove();
-              await db.collection('users').where({ coupleId: coupleId }).remove();
-              await db.collection('couples').doc(coupleId).remove();
-            } else {
-              // partner 解绑：删除用户记录，清空 partnerOpenid
-              await db.collection('users').doc(userInfo._id).remove();
-              // 兼容新旧字段：清空 partnerOpenid 和 partnerUid
-              await db.collection('couples').doc(coupleId).update({
-                data: { partnerOpenid: '', partnerUid: '' }
-              });
+              if (userInfo.role === 'creator') {
+                // 创建者解绑：删除所有数据
+                await db.collection('moods').where({ coupleId: coupleId }).remove();
+                await db.collection('diaries').where({ coupleId: coupleId }).remove();
+                await db.collection('anniversary_records').where({ coupleId: coupleId }).remove();
+                await db.collection('anniversaries').where({ coupleId: coupleId }).remove();
+                await db.collection('users').where({ coupleId: coupleId }).remove();
+                await db.collection('couples').doc(coupleId).remove();
+              } else {
+                // partner 解绑：删除用户记录，清空 partnerOpenid
+                await db.collection('users').doc(userInfo._id).remove();
+                // 兼容新旧字段：清空 partnerOpenid 和 partnerUid
+                await db.collection('couples').doc(coupleId).update({
+                  data: { partnerOpenid: '', partnerUid: '' }
+                });
+              }
+
+              app.globalData.userInfo = null;
+              app.globalData.partnerInfo = null;
+              app.globalData.coupleId = null;
+              app.globalData.isBound = false;
+              app.globalData.togetherDate = null;
+              // 清除启动缓存，下次重新走完整流程
+              wx.removeStorageSync('love_calendar_state');
+
+              wx.hideLoading();
+              wx.showToast({ title: '已解绑', icon: 'success' });
+              setTimeout(function () { wx.reLaunch({ url: '/pages/welcome/welcome' }); }, 1500);
+            } catch (err) {
+              wx.hideLoading();
+              wx.showToast({ title: '解绑失败', icon: 'none' });
             }
-
-            app.globalData.userInfo = null;
-            app.globalData.partnerInfo = null;
-            app.globalData.coupleId = null;
-            app.globalData.isBound = false;
-            app.globalData.togetherDate = null;
-            // 清除启动缓存，下次重新走完整流程
-            wx.removeStorageSync('love_calendar_state');
-
-            wx.hideLoading();
-            wx.showToast({ title: '已解绑', icon: 'success' });
-            setTimeout(function () { wx.reLaunch({ url: '/pages/welcome/welcome' }); }, 1500);
-          } catch (err) {
-            wx.hideLoading();
-            wx.showToast({ title: '解绑失败', icon: 'none' });
-          }
         }
-      }
-    });
+      });
+    }
+  });
   },
 
   noop() {},
