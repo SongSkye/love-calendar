@@ -449,9 +449,14 @@
   color: #FFFFFF;
   border-radius: 32rpx;
   font-size: 20rpx;
-  padding: 6rpx 12rpx;
+  padding: 0 14rpx;
   border: none;
   line-height: 1;
+  /* 覆盖小程序 button 默认样式，否则 min-height 会撑大按钮 */
+  min-height: 0;
+  height: 64rpx;
+  margin: 0;
+  box-sizing: border-box;
 }
 
 /* ===== 详情弹窗评论区 ===== */
