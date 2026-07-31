@@ -200,13 +200,14 @@ Page({
         var pageData = allData.slice(skip, skip + pageSize);
 
         var diaries = pageData.map(function (item) {
-          var u = userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
+          // 优先用系统注入的 _openid 匹配（最可靠），兼容历史 uid/openid 字段
+          var u = userMap[item._openid] || userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
             avatar: u.avatar || '',
-            isMine: (item.uid === myUid) || (item.openid === myUid),
+            isMine: (item.uid === myUid) || (item.openid === myUid) || (item._openid === myUid),
           };
         });
 
@@ -232,13 +233,14 @@ Page({
         ]);
 
         var diaries = res.data.map(function (item) {
-          var u = userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
+          // 优先用系统注入的 _openid 匹配（最可靠），兼容历史 uid/openid 字段
+          var u = userMap[item._openid] || userMap[item.uid] || userMap[item.openid] || { nickname: '未知', role: 'unknown', avatar: '' };
           return {
             ...item,
             nickname: u.nickname,
             role: u.role,
             avatar: u.avatar || '',
-            isMine: (item.uid === myUid) || (item.openid === myUid),
+            isMine: (item.uid === myUid) || (item.openid === myUid) || (item._openid === myUid),
           };
         });
 
@@ -283,7 +285,8 @@ Page({
       diaryIds.forEach(function (id) { if (!map[id]) map[id] = []; });
       commentRes.data.forEach(function (c) {
         if (map[c.diaryId]) {
-          var commentUserId = c.uid || c.openid;
+          // 优先用系统注入的 _openid 匹配，兼容历史 uid/openid 字段
+          var commentUserId = c._openid || c.uid || c.openid;
           var u = userMap[commentUserId] || { nickname: '未知', role: '', avatar: '' };
           map[c.diaryId].push({
             ...c,
@@ -494,8 +497,8 @@ Page({
       if (res.data) {
         var diary = res.data;
         var myUid = app.getUserId();
-        // 兼容 uid 和 openid 两种字段名
-        var diaryUserId = diary.uid || diary.openid;
+        // 优先用系统注入的 _openid（最可靠），兼容历史 uid/openid 字段
+        var diaryUserId = diary._openid || diary.uid || diary.openid;
 
         // 优先使用缓存的用户信息，避免重复查库
         var userInfo = (userMapCache && (userMapCache[diaryUserId]))
@@ -503,10 +506,10 @@ Page({
           : null;
 
         if (!userInfo) {
-          // 缓存未命中时才查库，兼容 uid 和 openid 两种字段
+          // 缓存未命中时才查库，兼容 _openid/uid/openid 三种字段
           var _ = app._;
           var userRes = await db.collection('users').where(
-            _.or([{ openid: diaryUserId }, { uid: diaryUserId }])
+            _.or([{ _openid: diaryUserId }, { openid: diaryUserId }, { uid: diaryUserId }])
           ).get();
           userInfo = userRes.data.length > 0
             ? { nickname: userRes.data[0].nickname, role: userRes.data[0].role, avatar: userRes.data[0].avatar || '' }
@@ -550,7 +553,8 @@ Page({
       var userMap = userMapCache || await this.getUserMap();
       var myUid = app.getUserId();
       var comments = commentRes.data.map(function (c) {
-        var commentUserId = c.uid || c.openid;
+        // 优先用系统注入的 _openid 匹配，兼容历史 uid/openid 字段
+        var commentUserId = c._openid || c.uid || c.openid;
         var u = userMap[commentUserId] || { nickname: '未知', role: '', avatar: '' };
         return {
           ...c,
