@@ -1,5 +1,5 @@
 /**
- * Cloudflare Worker - 免费获取微信小程序 openid
+ * Cloudflare Worker - 免费获取微信小程序 openid + 云存储临时链接
  * 部署到 Cloudflare Workers 后，小程序通过 wx.login() 获取 code，
  * 发给此 Worker，Worker 调用微信 jscode2session 接口返回 openid。
  *
@@ -18,6 +18,12 @@ const APPID = 'wx58f20f88ad0c27c7';
 
 // 微信小程序 AppSecret（从 mp.weixin.qq.com → 开发 → 开发管理 → 开发设置 获取）
 const SECRET = '82090c79045c0228cbc5c2a728ff6902';
+
+// 云开发环境 ID
+const CLOUD_ENV = 'cloudbase-d2gr49l7r2f948ed1';
+
+// 缓存 access_token（有效期 7200 秒，提前 300 秒刷新）
+let accessTokenCache = { token: '', expireAt: 0 };
 
 export default {
   async fetch(request) {
@@ -58,6 +64,56 @@ export default {
       }
     }
 
+    // 获取云存储临时下载链接（应用级鉴权，绕过免费版存储权限限制）
+    if (url.pathname === '/api/getTempUrls' && request.method === 'POST') {
+      try {
+        const { fileList } = await request.json();
+        if (!fileList || !Array.isArray(fileList) || fileList.length === 0) {
+          return json({ success: false, message: 'fileList 不能为空', data: [] }, 400);
+        }
+
+        // 获取 access_token（应用级鉴权，不受云存储权限限制）
+        const accessToken = await getAccessToken();
+        if (!accessToken) {
+          return json({ success: false, message: '获取 access_token 失败', data: [] }, 500);
+        }
+
+        // 调用云开发 HTTP API 获取下载链接
+        const tcbResp = await fetch(
+          `https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${accessToken}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              env: CLOUD_ENV,
+              file_list: fileList.map(function (fid) {
+                return { fileid: fid, max_age: 7200 };
+              }),
+            }),
+          }
+        );
+        const tcbData = await tcbResp.json();
+
+        if (tcbData.errcode) {
+          console.error('batchdownloadfile 失败:', JSON.stringify(tcbData));
+          return json({ success: false, message: tcbData.errmsg || '获取下载链接失败', data: [] }, 500);
+        }
+
+        // 组装返回结果（与 wx.cloud.getTempFileURL 格式一致）
+        const data = (tcbData.file_list || []).map(function (f) {
+          return {
+            fileID: f.fileid,
+            tempFileURL: f.download_url || '',
+            status: f.status || 0,
+          };
+        });
+
+        return json({ success: true, data: data });
+      } catch (err) {
+        return json({ success: false, message: '服务器错误', data: [] }, 500);
+      }
+    }
+
     // 健康检查
     if (url.pathname === '/api/health') {
       return json({ success: true, message: 'ok' });
@@ -66,6 +122,37 @@ export default {
     return json({ success: false, message: '未知路由' }, 404);
   }
 };
+
+/**
+ * 获取微信 access_token（应用级，带缓存）
+ * 用于调用云开发 HTTP API，绕过免费版存储权限限制
+ */
+async function getAccessToken() {
+  const now = Date.now();
+  if (accessTokenCache.token && accessTokenCache.expireAt > now) {
+    return accessTokenCache.token;
+  }
+
+  try {
+    const resp = await fetch(
+      `https://api.weixin.qq.com/cgi-bin/token?grant_type=client_credential&appid=${APPID}&secret=${SECRET}`
+    );
+    const data = await resp.json();
+
+    if (data.access_token) {
+      accessTokenCache = {
+        token: data.access_token,
+        expireAt: now + (data.expires_in - 300) * 1000, // 提前 5 分钟过期
+      };
+      return data.access_token;
+    }
+    console.error('获取 access_token 失败:', JSON.stringify(data));
+    return null;
+  } catch (err) {
+    console.error('获取 access_token 异常:', err);
+    return null;
+  }
+}
 
 /**
  * 返回 JSON 响应
