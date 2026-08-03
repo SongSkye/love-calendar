@@ -2,6 +2,7 @@
  * 纪念日编辑/记录页
  * 三种模式：新建纪念日、编辑纪念日、记录纪念日（支持选择年份）
  */
+const util = require('../../utils/util');
 const app = getApp();
 
 /**

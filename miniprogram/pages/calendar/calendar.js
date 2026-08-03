@@ -217,6 +217,34 @@ Page({
         }
       });
 
+      // 转换 moodMap 中的 cloud:// 图片为临时链接（跨用户访问必须）
+      var allMoodImages = [];
+      Object.keys(moodMap).forEach(function (date) {
+        moodMap[date].users.forEach(function (user) {
+          (user.images || []).forEach(function (img) {
+            if (img.indexOf('cloud://') === 0) {
+              allMoodImages.push(img);
+            }
+          });
+        });
+      });
+      if (allMoodImages.length > 0) {
+        try {
+          var moodImageUrlMap = await util.convertCloudFileIDs(allMoodImages);
+          Object.keys(moodMap).forEach(function (date) {
+            moodMap[date].users.forEach(function (user) {
+              if (user.images) {
+                user.images = user.images.map(function (img) {
+                  return moodImageUrlMap[img] || img;
+                });
+              }
+            });
+          });
+        } catch (e) {
+          console.warn('转换心情照片临时链接失败:', e);
+        }
+      }
+
       this.setData({ moodMap: moodMap });
       this.checkTodayMood();
       this.computeStats();

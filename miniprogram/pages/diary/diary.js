@@ -217,6 +217,9 @@ Page({
           page: this.data.page + 1,
         });
 
+        // 转换日记图片 cloud:// 为临时链接（跨用户可见）
+        this.convertDiaryImages(diaries);
+
         // 批量加载评论
         this.loadCommentsBatch(diaries);
       } else {
@@ -250,6 +253,9 @@ Page({
           page: this.data.page + 1,
         });
 
+        // 转换日记图片 cloud:// 为临时链接（跨用户可见）
+        this.convertDiaryImages(diaries);
+
         // 批量加载评论
         this.loadCommentsBatch(diaries);
       }
@@ -257,6 +263,60 @@ Page({
       console.error('加载日记失败:', err);
     } finally {
       this.setData({ loading: false });
+    }
+  },
+
+  /**
+   * 转换日记列表中的 cloud:// 图片为临时链接（跨用户访问必须）
+   * @param {Array} diaries - 日记列表
+   */
+  async convertDiaryImages(diaries) {
+    var allImages = [];
+    diaries.forEach(function (item) {
+      if (item.images && item.images.length > 0) {
+        item.images.forEach(function (img) {
+          if (img.indexOf('cloud://') === 0) {
+            allImages.push(img);
+          }
+        });
+      }
+    });
+    if (allImages.length === 0) return;
+
+    try {
+      var urlMap = await util.convertCloudFileIDs(allImages);
+      diaries.forEach(function (item) {
+        if (item.images) {
+          item.images = item.images.map(function (img) {
+            return urlMap[img] || img;
+          });
+        }
+      });
+      this.setData({ diaries: this.data.diaries });
+    } catch (e) {
+      console.warn('转换日记图片临时链接失败:', e);
+    }
+  },
+
+  /**
+   * 转换详情弹窗中的 cloud:// 图片为临时链接（跨用户访问必须）
+   * @param {Object} diary - 日记对象
+   */
+  async convertDetailImages(diary) {
+    if (!diary.images || diary.images.length === 0) return;
+    var cloudImages = diary.images.filter(function (img) {
+      return img.indexOf('cloud://') === 0;
+    });
+    if (cloudImages.length === 0) return;
+
+    try {
+      var urlMap = await util.convertCloudFileIDs(cloudImages);
+      diary.images = diary.images.map(function (img) {
+        return urlMap[img] || img;
+      });
+      this.setData({ detailDiary: diary });
+    } catch (e) {
+      console.warn('转换详情图片临时链接失败:', e);
     }
   },
 
@@ -529,6 +589,9 @@ Page({
           detailCommentText: '',
           detailComments: [],
         });
+
+        // 转换详情弹窗图片 cloud:// 为临时链接（跨用户可见）
+        this.convertDetailImages(diary);
 
         // 加载详情页的评论
         this.loadDetailComments(id);
