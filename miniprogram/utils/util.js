@@ -213,6 +213,54 @@ async function convertCloudFileIDs(fileIds) {
   }
 }
 
+/**
+ * 从纪念日列表构建日期映射（用于日历角标和今天判断）
+ * 按 MM-DD 格式分组，同一天可能有多个纪念日
+ * @param {Array} anniversaryList - 纪念日列表
+ * @returns {Object} { "MM-DD": [{title, type, _id, ...}] }
+ */
+function buildAnniversaryDateMap(anniversaryList) {
+  var map = {};
+  anniversaryList.forEach(function (item) {
+    var d = new Date(item.date);
+    var key = String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+    if (!map[key]) map[key] = [];
+    map[key].push({
+      title: item.title,
+      type: item.type,
+      _id: item._id,
+      date: item.date,
+    });
+  });
+  return map;
+}
+
+/**
+ * 判断今天是否为纪念日，返回纪念日对象（按月日匹配，忽略年份）
+ * 如果有多个纪念日在同一天，返回第一个（通常为"在一起"）
+ * @param {Array} anniversaryList - 纪念日列表
+ * @returns {Object|null} 今天的纪念日对象（附带 totalDays），或 null
+ */
+function getTodayAnniversary(anniversaryList) {
+  var today = new Date();
+  var todayMonth = today.getMonth();
+  var todayDate = today.getDate();
+  for (var i = 0; i < anniversaryList.length; i++) {
+    var item = anniversaryList[i];
+    var d = new Date(item.date);
+    if (d.getMonth() === todayMonth && d.getDate() === todayDate) {
+      var totalDiffTime = today.getTime() - d.getTime();
+      return {
+        title: item.title,
+        type: item.type,
+        date: item.date,
+        totalDays: Math.floor(totalDiffTime / (1000 * 60 * 60 * 24)),
+      };
+    }
+  }
+  return null;
+}
+
 module.exports = {
   formatDate,
   getToday,
@@ -226,5 +274,7 @@ module.exports = {
   formatRelativeDate,
   formatDateTime,
   convertCloudFileIDs,
+  buildAnniversaryDateMap,
+  getTodayAnniversary,
   MOOD_MAP,
 };

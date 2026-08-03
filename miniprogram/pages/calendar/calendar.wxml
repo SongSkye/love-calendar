@@ -4,13 +4,17 @@
 -->
 <view class="calendar-page">
   <!-- 头部信息卡片 -->
-  <view class="header-card">
+  <view class="header-card {{todayAnniversary ? 'anniversary-today' : ''}}">
     <view class="header-left">
       <view class="together-days">
         <text class="days-number">{{togetherDays}}</text>
         <text class="days-unit">天</text>
       </view>
       <view class="together-label">在一起</view>
+      <!-- 纪念日当天提示 -->
+      <view class="anniversary-today-label" wx:if="{{todayAnniversary}}">
+        🎉 今天是「{{todayAnniversary.title}}」
+      </view>
     </view>
     <view class="header-right">
       <view class="next-anniversary" wx:if="{{nextAnniversary}}">
@@ -21,6 +25,27 @@
         <text>添加纪念日吧 💝</text>
       </view>
     </view>
+  </view>
+
+  <!-- 悄悄话卡片 -->
+  <view class="love-note-card" wx:if="{{loveNote}}" bindtap="openLoveNotePopup">
+    <view class="love-note-header">
+      <text class="love-note-icon">💌</text>
+      <text class="love-note-label">TA 今天想对你说</text>
+      <view class="love-note-unread" wx:if="{{!loveNote.isRead}}"></view>
+    </view>
+    <text class="love-note-text">{{loveNote.content}}</text>
+  </view>
+
+  <view class="love-note-card love-note-sent" wx:elif="{{myLoveNote}}" bindtap="openLoveNotePopup">
+    <text class="love-note-icon">💌</text>
+    <text class="love-note-text">今日悄悄话已发送 ✅</text>
+    <text class="love-note-preview">{{myLoveNote.content}}</text>
+  </view>
+
+  <view class="love-note-card love-note-empty" wx:else bindtap="openLoveNotePopup">
+    <text class="love-note-icon">💌</text>
+    <text class="love-note-label">给TA写一句悄悄话...</text>
   </view>
 
   <!-- 月历 -->
@@ -40,7 +65,7 @@
     <!-- 日期格子 -->
     <view class="date-grid">
       <view
-        class="date-cell {{item.empty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}}"
+        class="date-cell {{item.empty ? 'empty' : ''}} {{item.isToday ? 'today' : ''}} {{item.isToday && todayAnniversary ? 'today-anniversary' : ''}}"
         wx:for="{{calendarGrid}}"
         wx:key="index"
         data-date="{{item.date}}"
@@ -48,6 +73,16 @@
         bindtap="onDateTap"
       >
         <view class="date-num" wx:if="{{!item.empty}}">{{item.day}}</view>
+        <!-- 纪念日角标 -->
+        <view class="anniversary-mark" wx:if="{{!item.empty && anniversaryDateMap[item.date.substring(5)]}}">
+          <text
+            wx:for="{{anniversaryDateMap[item.date.substring(5)]}}"
+            wx:key="_id"
+            wx:for-item="mark"
+            wx:if="{{index < 2}}"
+          >{{mark.type === 'together' ? '❤️' : (mark.type === 'birthday' ? '🎂' : '⭐')}}</text>
+          <text wx:if="{{anniversaryDateMap[item.date.substring(5)].length > 2}}">...</text>
+        </view>
         <!-- 心情表情 -->
         <view class="mood-row" wx:if="{{!item.empty && moodMap[item.date]}}">
           <text
@@ -206,5 +241,36 @@
       </view>
       <view class="mood-detail-edit" wx:if="{{item.isMine}}" bindtap="editMoodFromDetail" data-item="{{item}}">修改</view>
     </view>
+  </view>
+</view>
+
+<!-- 悄悄话弹窗 -->
+<view class="mood-popup-mask" wx:if="{{showLoveNotePopup}}" bindtap="closeLoveNotePopup">
+  <view class="mood-popup" catchtap="noop">
+    <view class="popup-header">
+      <text class="popup-title">今日想对TA说...</text>
+      <view class="popup-close" bindtap="closeLoveNotePopup">✕</view>
+    </view>
+    <view class="form-group">
+      <textarea
+        class="mood-note"
+        placeholder="写一句悄悄话吧（最多200字）"
+        value="{{loveNoteContent}}"
+        bindinput="onLoveNoteInput"
+        maxlength="200"
+        auto-height
+      />
+    </view>
+    <button class="btn-save-mood" bindtap="saveLoveNote" loading="{{savingLoveNote}}">发送悄悄话</button>
+  </view>
+</view>
+
+<!-- 纪念日庆祝弹窗 -->
+<view class="mood-popup-mask celebration-mask" wx:if="{{showCelebrationPopup}}" bindtap="closeCelebrationPopup">
+  <view class="celebration-popup" catchtap="noop">
+    <text class="celebration-big-emoji">🎉</text>
+    <text class="celebration-title">今天是「{{todayAnniversary.title}}」</text>
+    <text class="celebration-days">已经 {{todayAnniversary.totalDays}} 天啦 💕</text>
+    <view class="celebration-btn" bindtap="closeCelebrationPopup">知道啦</view>
   </view>
 </view>

@@ -18,6 +18,18 @@ Page({
     nextAnniversary: null,
     hasTodayMood: false,
 
+    // 纪念日标记和特效
+    anniversaryDateMap: {},        // { "MM-DD": [{title, type, _id, date}] }
+    todayAnniversary: null,        // 今天的纪念日对象（如果有）
+    showCelebrationPopup: false,   // 庆祝弹窗
+
+    // 悄悄话
+    loveNote: null,               // 对方今天发给我的悄悄话
+    myLoveNote: null,             // 我今天发给对方的悄悄话
+    showLoveNotePopup: false,     // 写悄悄话弹窗
+    loveNoteContent: '',          // 正在编辑的悄悄话内容
+    savingLoveNote: false,        // 保存中状态
+
     // 心情记录弹窗
     showMoodPopup: false,
     showMoodDetail: false,
@@ -159,6 +171,17 @@ Page({
       }
       if (anniCache.length > 0) {
         this.computeAnniversaries(anniCache);
+        // 构建纪念日日期映射（用于日历角标）
+        var anniDateMap = util.buildAnniversaryDateMap(anniCache);
+        this.setData({ anniversaryDateMap: anniDateMap });
+        // 检查今天是否为纪念日（用于特效）
+        var todayAnni = util.getTodayAnniversary(anniCache);
+        var dismissedDate = wx.getStorageSync('celebration_dismissed_date') || '';
+        if (todayAnni && dismissedDate !== util.getToday()) {
+          this.setData({ todayAnniversary: todayAnni, showCelebrationPopup: true });
+        } else if (todayAnni) {
+          this.setData({ todayAnniversary: todayAnni });
+        }
       }
 
       // 3. 只查一次 moods 表（全部数据），同时用于月历展示和统计
@@ -197,6 +220,9 @@ Page({
       this.setData({ moodMap: moodMap });
       this.checkTodayMood();
       this.computeStats();
+
+      // 4. 加载今日悄悄话
+      await this.loadTodayLoveNotes();
 
     } catch (err) {
       console.error('加载数据失败:', err);
@@ -324,6 +350,125 @@ Page({
     const range = e.currentTarget.dataset.range;
     this.setData({ statRange: range });
     this.computeStats();
+  },
+
+  /**
+   * 加载今日悄悄话
+   * 查询对方发给我的和我发给对方的今天悄悄话，自动标记已读
+   */
+  async loadTodayLoveNotes() {
+    const db = app.getDb();
+    const coupleId = app.globalData.coupleId;
+    const myUid = app.getUserId();
+    const today = util.getToday();
+    var partnerUid = app.globalData.partnerInfo
+      ? (app.globalData.partnerInfo.openid || app.globalData.partnerInfo.uid)
+      : null;
+    if (!partnerUid) return;
+
+    try {
+      // 查询对方今天发给我的
+      var toMeRes = await db.collection('love_notes')
+        .where({ coupleId: coupleId, toUid: myUid, date: today })
+        .get();
+      // 查询我今天发给对方的
+      var fromMeRes = await db.collection('love_notes')
+        .where({ coupleId: coupleId, fromUid: myUid, date: today })
+        .get();
+
+      var loveNote = toMeRes.data.length > 0 ? toMeRes.data[0] : null;
+      var myLoveNote = fromMeRes.data.length > 0 ? fromMeRes.data[0] : null;
+
+      this.setData({ loveNote: loveNote, myLoveNote: myLoveNote });
+
+      // 自动标记为已读
+      if (loveNote && !loveNote.isRead) {
+        db.collection('love_notes').doc(loveNote._id).update({
+          data: { isRead: true }
+        }).catch(function () {});
+      }
+    } catch (e) {
+      console.error('加载悄悄话失败:', e);
+    }
+  },
+
+  /**
+   * 打开写悄悄话弹窗
+   */
+  openLoveNotePopup() {
+    this.setData({
+      showLoveNotePopup: true,
+      loveNoteContent: this.data.myLoveNote ? this.data.myLoveNote.content : '',
+    });
+  },
+
+  /**
+   * 关闭写悄悄话弹窗
+   */
+  closeLoveNotePopup() {
+    this.setData({ showLoveNotePopup: false, loveNoteContent: '' });
+  },
+
+  /**
+   * 悄悄话输入框内容变化
+   */
+  onLoveNoteInput(e) {
+    this.setData({ loveNoteContent: e.detail.value });
+  },
+
+  /**
+   * 保存悄悄话（每天每人一条，覆盖模式）
+   */
+  async saveLoveNote() {
+    var content = (this.data.loveNoteContent || '').trim();
+    if (!content) {
+      wx.showToast({ title: '请输入内容', icon: 'none' });
+      return;
+    }
+    if (content.length > 200) {
+      wx.showToast({ title: '最多200字哦', icon: 'none' });
+      return;
+    }
+
+    this.setData({ savingLoveNote: true });
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    var myUid = app.getUserId();
+    var partnerUid = app.globalData.partnerInfo
+      ? (app.globalData.partnerInfo.openid || app.globalData.partnerInfo.uid)
+      : '';
+    var today = util.getToday();
+
+    try {
+      var myLoveNote = this.data.myLoveNote;
+      if (myLoveNote && myLoveNote._id) {
+        // 更新已有记录
+        await db.collection('love_notes').doc(myLoveNote._id).update({
+          data: { content: content, createdAt: new Date().toISOString(), isRead: false }
+        });
+      } else {
+        // 新增
+        await db.collection('love_notes').add({
+          data: {
+            coupleId: coupleId,
+            fromUid: myUid,
+            toUid: partnerUid,
+            content: content,
+            date: today,
+            createdAt: new Date().toISOString(),
+            isRead: false,
+          }
+        });
+      }
+      wx.showToast({ title: '悄悄话已发送 💌', icon: 'success' });
+      this.setData({ showLoveNotePopup: false, loveNoteContent: '' });
+      this.loadTodayLoveNotes();
+    } catch (e) {
+      console.error('保存悄悄话失败:', e);
+      wx.showToast({ title: '发送失败', icon: 'none' });
+    } finally {
+      this.setData({ savingLoveNote: false });
+    }
   },
 
   onDateTap(e) {
@@ -487,6 +632,10 @@ Page({
 
   closeMoodPopup() { this.setData({ showMoodPopup: false }); },
   closeMoodDetail() { this.setData({ showMoodDetail: false }); },
+  closeCelebrationPopup() {
+    wx.setStorageSync('celebration_dismissed_date', util.getToday());
+    this.setData({ showCelebrationPopup: false });
+  },
   noop() {},
 
   onShareAppMessage() {

@@ -7,7 +7,8 @@
     "pages/anniversary/anniversary",
     "pages/anniversary-detail/anniversary-detail",
     "pages/anniversary-record/anniversary-record",
-    "pages/mine/mine"
+    "pages/mine/mine",
+    "pages/photos/photos"
   ],
   "window": {
     "backgroundTextStyle": "light",

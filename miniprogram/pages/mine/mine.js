@@ -211,6 +211,10 @@ Page({
     });
   },
 
+  goPhotos() {
+    wx.navigateTo({ url: '/pages/photos/photos' });
+  },
+
   /**
    * 解绑并退出空间
    * 同一微信号在所有设备上共享数据，解绑即删除此账号的全部数据

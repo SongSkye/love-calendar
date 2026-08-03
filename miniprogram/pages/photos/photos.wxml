@@ -1,0 +1,46 @@
+<!-- 照片墙页面 - 聚合展示心情和日记中的照片 -->
+<view class="photos-page">
+  <!-- 加载中 -->
+  <view class="loading-box" wx:if="{{loading}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{!loading && groupedPhotos.length === 0}}">
+    <view class="empty-icon">📷</view>
+    <view class="empty-text">还没有照片记录</view>
+    <view class="empty-sub">开始记录心情和日记吧 💕</view>
+  </view>
+
+  <!-- 按日期分组的照片列表 -->
+  <view class="photo-groups" wx:if="{{!loading}}">
+    <view class="photo-group" wx:for="{{groupedPhotos}}" wx:key="date">
+      <view class="group-header">
+        <text class="group-date">{{item.date}}</text>
+        <text class="group-label">{{item.label}}</text>
+      </view>
+
+      <view class="photo-grid">
+        <view
+          class="photo-item"
+          wx:for="{{item.photos}}"
+          wx:key="id"
+          wx:for-item="photo"
+          bindtap="previewPhoto"
+          data-url="{{photo.url}}"
+        >
+          <image src="{{photo.url}}" mode="aspectFill" class="photo-img"></image>
+          <view class="photo-info">
+            <view class="photo-source">
+              <text class="source-tag {{photo.source === 'mood' ? 'tag-mood' : 'tag-diary'}}">
+                {{photo.source === 'mood' ? '😊 心情' : '📝 日记'}}
+              </text>
+              <text class="photo-author">{{photo.userNickname}}</text>
+            </view>
+            <text class="photo-note" wx:if="{{photo.note}}">{{photo.note}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+</view>
