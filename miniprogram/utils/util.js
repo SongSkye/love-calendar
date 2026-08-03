@@ -3,6 +3,150 @@
  * 日期格式化、倒计时计算、邀请码生成等
  */
 
+const app = getApp();
+
+/**
+ * 将图片压缩并转为 base64 Data URI
+ * 使用 OffscreenCanvas 压缩，生成的 base64 存入 image_thumbs 集合，
+ * 供跨用户显示使用（绕过微信免费版存储权限限制）
+ * @param {string} filePath - 图片临时路径（wx.chooseImage 返回的 tempFilePath）
+ * @param {number} maxWidth - 最大宽度（像素），默认 400
+ * @param {number} quality - JPEG 质量 0-1，默认 0.7
+ * @returns {Promise<string>} data:image/jpeg;base64,... 格式的 Data URI
+ */
+function compressImageToBase64(filePath, maxWidth, quality) {
+  maxWidth = maxWidth || 400;
+  quality = quality || 0.7;
+
+  return new Promise(function (resolve, reject) {
+    wx.getImageInfo({
+      src: filePath,
+      success: function (info) {
+        var scale = Math.min(1, maxWidth / info.width);
+        var w = Math.round(info.width * scale);
+        var h = Math.round(info.height * scale);
+
+        try {
+          var canvas = wx.createOffscreenCanvas({ type: '2d', width: w, height: h });
+          var ctx = canvas.getContext('2d');
+          var img = canvas.createImage();
+
+          img.onload = function () {
+            ctx.drawImage(img, 0, 0, w, h);
+            var base64 = canvas.toDataURL('image/jpeg', quality);
+            resolve(base64);
+          };
+          img.onerror = function () {
+            // 降级：直接读文件转 base64（不压缩，但至少能用）
+            readFileAsBase64(filePath, resolve, reject);
+          };
+          img.src = filePath;
+        } catch (e) {
+          // OffscreenCanvas 不可用，降级
+          readFileAsBase64(filePath, resolve, reject);
+        }
+      },
+      fail: function () {
+        readFileAsBase64(filePath, resolve, reject);
+      }
+    });
+  });
+}
+
+/**
+ * 降级方案：直接读取文件为 base64
+ */
+function readFileAsBase64(filePath, resolve, reject) {
+  wx.getFileSystemManager().readFile({
+    filePath: filePath,
+    encoding: 'base64',
+    success: function (res) {
+      resolve('data:image/jpeg;base64,' + res.data);
+    },
+    fail: reject
+  });
+}
+
+/**
+ * 将缩略图 base64 存入 image_thumbs 集合
+ * 用于跨用户显示图片，绕过免费版存储权限限制
+ * @param {string} fileID - cloud:// 格式的 fileID
+ * @param {string} base64 - data:image/jpeg;base64,... 格式的 Data URI
+ */
+async function saveImageThumb(fileID, base64) {
+  try {
+    var db = app.getDb();
+    var existRes = await db.collection('image_thumbs').where({ fileID: fileID }).get();
+    if (existRes.data.length > 0) {
+      await db.collection('image_thumbs').doc(existRes.data[0]._id).update({
+        data: { base64: base64, updatedAt: new Date().toISOString() }
+      });
+    } else {
+      await db.collection('image_thumbs').add({
+        data: { fileID: fileID, base64: base64, createdAt: new Date().toISOString() }
+      });
+    }
+  } catch (err) {
+    console.warn('saveImageThumb 失败:', err);
+  }
+}
+
+/**
+ * 预览图片，兼容 base64 Data URI
+ * 先将 base64 写入临时文件，再用 wx.previewImage 预览
+ * cloud:// 和 https:// 格式直接传入
+ * @param {Array<string>} urls - 图片 URL 数组（可能混合 base64、cloud://、https://）
+ * @param {number} currentIndex - 当前预览的索引
+ */
+async function previewImage(urls, currentIndex) {
+  if (!urls || urls.length === 0) return;
+
+  var processed = [];
+  for (var i = 0; i < urls.length; i++) {
+    var url = urls[i];
+    if (url && url.indexOf('data:') === 0) {
+      try {
+        var tempPath = await base64ToTempFile(url);
+        processed.push(tempPath);
+      } catch (e) {
+        console.warn('base64 转临时文件失败:', e);
+        processed.push(url);
+      }
+    } else {
+      processed.push(url);
+    }
+  }
+
+  wx.previewImage({
+    current: processed[currentIndex] || processed[0],
+    urls: processed
+  });
+}
+
+/**
+ * 将 base64 Data URI 写入临时文件
+ * @param {string} dataUri - data:image/jpeg;base64,... 格式
+ * @returns {Promise<string>} 临时文件路径
+ */
+function base64ToTempFile(dataUri) {
+  return new Promise(function (resolve, reject) {
+    var parts = dataUri.split(',');
+    var base64 = parts.length > 1 ? parts[1] : parts[0];
+    var extMatch = parts[0].match(/data:image\/(\w+);/);
+    var ext = extMatch ? extMatch[1] : 'jpg';
+
+    var filePath = wx.env.USER_DATA_PATH + '/preview_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6) + '.' + ext;
+
+    wx.getFileSystemManager().writeFile({
+      filePath: filePath,
+      data: base64,
+      encoding: 'base64',
+      success: function () { resolve(filePath); },
+      fail: reject
+    });
+  });
+}
+
 /**
  * 格式化日期为 YYYY-MM-DD
  * @param {Date} date - 日期对象
@@ -192,23 +336,53 @@ function formatDateTime(dateStr) {
 
 /**
  * 将云存储 fileID（cloud://）批量转换为临时链接
- * 通过 Cloudflare Worker 调用云开发 HTTP API（应用级鉴权），绕过免费版存储权限限制
- * 注意：直接调用 wx.cloud.getTempFileURL 受存储权限限制，非上传者无法获取
+ * 优先从 image_thumbs 集合查 base64 缩略图（跨用户可见，无需 Worker）
+ * 查不到的旧数据降级走 Worker，Worker 失败则用 wx.cloud.getTempFileURL
  * @param {Array<string>} fileIds - cloud:// 格式的 fileID 数组
- * @returns {Promise<Object>} fileID -> tempFileURL 的映射对象
+ * @returns {Promise<Object>} fileID -> url 的映射对象（base64 或 tempFileURL）
  */
 async function convertCloudFileIDs(fileIds) {
   if (!fileIds || fileIds.length === 0) return {};
 
-  var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getTempUrls';
+  var map = {};
+  var missIds = [];  // image_thumbs 中查不到的，需要走降级逻辑
 
   try {
-    // 通过 Worker 获取临时链接（应用级 access_token，不受存储权限限制）
+    // 第一层：从 image_thumbs 集合查 base64 缩略图
+    var db = app.getDb();
+    var _ = db.command;
+    var thumbRes = await db.collection('image_thumbs')
+      .where({ fileID: _.in(fileIds) })
+      .get();
+
+    thumbRes.data.forEach(function (item) {
+      if (item.base64) {
+        map[item.fileID] = item.base64;
+      }
+    });
+
+    // 找出没命中的 fileID
+    fileIds.forEach(function (fid) {
+      if (!map[fid]) {
+        missIds.push(fid);
+      }
+    });
+  } catch (e) {
+    // image_thumbs 查询失败（比如集合不存在），全部走降级
+    console.warn('查询 image_thumbs 失败，全部走降级:', e);
+    missIds = fileIds.slice();
+  }
+
+  if (missIds.length === 0) return map;
+
+  // 第二层：没命中的走 Worker
+  var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getTempUrls';
+  try {
     var resp = await new Promise(function (resolve, reject) {
       wx.request({
         url: WORKER_URL,
         method: 'POST',
-        data: { fileList: fileIds },
+        data: { fileList: missIds },
         header: { 'Content-Type': 'application/json' },
         success: resolve,
         fail: reject,
@@ -216,29 +390,37 @@ async function convertCloudFileIDs(fileIds) {
     });
 
     if (resp.statusCode === 200 && resp.data && resp.data.success && resp.data.data) {
-      var map = {};
       resp.data.data.forEach(function (f) {
-        if (f.tempFileURL) {
+        if (f.tempFileURL && !map[f.fileID]) {
           map[f.fileID] = f.tempFileURL;
         }
       });
-      return map;
+      // 检查是否还有未命中的
+      var stillMiss = [];
+      missIds.forEach(function (fid) {
+        if (!map[fid]) stillMiss.push(fid);
+      });
+      missIds = stillMiss;
     }
+  } catch (e) {
+    console.warn('Worker 请求异常:', e);
+  }
 
-    console.warn('Worker 转换临时链接失败，尝试直接调用:', resp.data);
-    // Worker 失败时，降级为直接调用（至少上传者自己的图片能显示）
-    var directRes = await wx.cloud.getTempFileURL({ fileList: fileIds });
-    var map = {};
+  if (missIds.length === 0) return map;
+
+  // 第三层：直接调用 wx.cloud.getTempFileURL（至少上传者自己的能看到）
+  try {
+    var directRes = await wx.cloud.getTempFileURL({ fileList: missIds });
     directRes.fileList.forEach(function (f) {
-      if (f.tempFileURL) {
+      if (f.tempFileURL && !map[f.fileID]) {
         map[f.fileID] = f.tempFileURL;
       }
     });
-    return map;
   } catch (e) {
     console.warn('转换云存储临时链接失败:', e);
-    return {};
   }
+
+  return map;
 }
 
 /**
@@ -302,6 +484,9 @@ module.exports = {
   formatRelativeDate,
   formatDateTime,
   convertCloudFileIDs,
+  compressImageToBase64,
+  saveImageThumb,
+  previewImage,
   buildAnniversaryDateMap,
   getTodayAnniversary,
   MOOD_MAP,

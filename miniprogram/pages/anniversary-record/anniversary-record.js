@@ -134,10 +134,17 @@ Page({
       sourceType: ['album', 'camera'],
       success: function (res) {
         wx.showLoading({ title: '上传中...' });
+        var tempPath = res.tempFilePaths[0];
         wx.cloud.uploadFile({
           cloudPath: 'covers/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg',
-          filePath: res.tempFilePaths[0],
+          filePath: tempPath,
         }).then(function (uploadRes) {
+          // 生成缩略图 base64 存入 image_thumbs，供跨用户显示
+          util.compressImageToBase64(tempPath, 400, 0.7).then(function (base64) {
+            util.saveImageThumb(uploadRes.fileID, base64);
+          }).catch(function (e) {
+            console.warn('生成缩略图失败:', e);
+          });
           wx.hideLoading();
           // 删除旧封面
           if (that.data.coverImage) {
@@ -170,6 +177,14 @@ Page({
           return wx.cloud.uploadFile({
             cloudPath: 'anniversary_records/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg',
             filePath: fp,
+          }).then(function (uploadResult) {
+            // 生成缩略图 base64 存入 image_thumbs，供跨用户显示
+            util.compressImageToBase64(fp, 400, 0.7).then(function (base64) {
+              util.saveImageThumb(uploadResult.fileID, base64);
+            }).catch(function (e) {
+              console.warn('生成缩略图失败:', e);
+            });
+            return uploadResult;
           });
         });
         Promise.all(promises).then(function (results) {
@@ -194,7 +209,7 @@ Page({
   },
 
   previewRecordImage(e) {
-    wx.previewImage({ current: e.currentTarget.dataset.url, urls: this.data.recordImages });
+    util.previewImage(this.data.recordImages, e.currentTarget.dataset.index);
   },
 
   /**

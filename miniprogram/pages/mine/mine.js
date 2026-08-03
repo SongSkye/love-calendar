@@ -106,10 +106,17 @@ Page({
       sourceType: ['album', 'camera'],
       success: function (res) {
         wx.showLoading({ title: '上传中...' });
+        var tempPath = res.tempFilePaths[0];
         wx.cloud.uploadFile({
           cloudPath: 'avatars/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg',
-          filePath: res.tempFilePaths[0],
+          filePath: tempPath,
         }).then(function (uploadRes) {
+          // 生成缩略图 base64 存入 image_thumbs，供跨用户显示
+          util.compressImageToBase64(tempPath, 400, 0.7).then(function (base64) {
+            util.saveImageThumb(uploadRes.fileID, base64);
+          }).catch(function (e) {
+            console.warn('生成缩略图失败:', e);
+          });
           // 删除旧头像
           if (oldAvatar) {
             wx.cloud.deleteFile({ fileList: [oldAvatar] }).catch(function () {});

@@ -571,6 +571,14 @@ Page({
           return wx.cloud.uploadFile({
             cloudPath: 'moods/' + Date.now() + '_' + Math.random().toString(36).substr(2, 8) + '.jpg',
             filePath: fp,
+          }).then(function (uploadResult) {
+            // 生成缩略图 base64 存入 image_thumbs，供跨用户显示
+            util.compressImageToBase64(fp, 400, 0.7).then(function (base64) {
+              util.saveImageThumb(uploadResult.fileID, base64);
+            }).catch(function (e) {
+              console.warn('生成缩略图失败:', e);
+            });
+            return uploadResult;
           });
         });
         Promise.all(promises).then(function (results) {
@@ -598,12 +606,12 @@ Page({
 
   previewMoodImage(e) {
     const index = e.currentTarget.dataset.index;
-    wx.previewImage({ current: this.data.moodImages[index], urls: this.data.moodImages });
+    util.previewImage(this.data.moodImages, index);
   },
 
   previewDetailImage(e) {
     const { url, urls } = e.currentTarget.dataset;
-    wx.previewImage({ current: url, urls: urls });
+    util.previewImage(urls, urls.indexOf(url));
   },
 
   /**

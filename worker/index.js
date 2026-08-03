@@ -114,6 +114,49 @@ export default {
       }
     }
 
+    // 诊断端点：测试 access_token + batchdownloadfile 各环节
+    if (url.pathname === '/api/diagnose' && request.method === 'POST') {
+      const result = { steps: [] };
+      try {
+        const { fileList } = await request.json();
+        const testFileIds = (fileList && fileList.length > 0) ? fileList : ['cloud://test.xxx'];
+
+        // 步骤1：获取 access_token
+        const token = await getAccessToken();
+        if (!token) {
+          result.steps.push({ step: '获取 access_token', status: 'FAIL', detail: '返回 null' });
+          return json({ success: false, message: 'access_token 获取失败', diagnose: result }, 500);
+        }
+        result.steps.push({ step: '获取 access_token', status: 'OK', tokenPrefix: token.substring(0, 10) + '...' });
+
+        // 步骤2：调用 batchdownloadfile
+        const tcbResp = await fetch(
+          `https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${token}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              env: CLOUD_ENV,
+              file_list: testFileIds.map(function (fid) {
+                return { fileid: fid, max_age: 7200 };
+              }),
+            }),
+          }
+        );
+        const tcbData = await tcbResp.json();
+        result.steps.push({
+          step: 'batchdownloadfile',
+          status: tcbData.errcode ? 'FAIL' : 'OK',
+          raw: tcbData,
+        });
+
+        return json({ success: !tcbData.errcode, diagnose: result });
+      } catch (err) {
+        result.steps.push({ step: '异常', status: 'FAIL', detail: err.message });
+        return json({ success: false, message: '诊断异常', diagnose: result }, 500);
+      }
+    }
+
     // 健康检查
     if (url.pathname === '/api/health') {
       return json({ success: true, message: 'ok' });

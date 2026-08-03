@@ -211,7 +211,7 @@ Page({
   previewImage(e) {
     var url = e.currentTarget.dataset.url;
     var urls = e.currentTarget.dataset.urls;
-    wx.previewImage({ current: url, urls: urls });
+    util.previewImage(urls, urls.indexOf(url));
   },
 
   onShareAppMessage() {

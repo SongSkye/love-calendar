@@ -184,7 +184,7 @@ Page({
   previewPhoto(e) {
     var url = e.currentTarget.dataset.url;
     var urls = this.data.allPhotos.map(function (p) { return p.url; });
-    wx.previewImage({ current: url, urls: urls });
+    util.previewImage(urls, urls.indexOf(url));
   },
 
   onShareAppMessage() {
