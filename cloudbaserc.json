@@ -7,6 +7,7 @@
     { "name": "mood", "runtime": "Nodejs16.13" },
     { "name": "diary", "runtime": "Nodejs16.13" },
     { "name": "anniversary", "runtime": "Nodejs16.13" },
-    { "name": "user", "runtime": "Nodejs16.13" }
+    { "name": "user", "runtime": "Nodejs16.13" },
+    { "name": "getTempUrls", "runtime": "Nodejs16.13" }
   ]
 }

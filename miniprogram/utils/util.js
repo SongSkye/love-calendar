@@ -192,16 +192,33 @@ function formatDateTime(dateStr) {
 
 /**
  * 将云存储 fileID（cloud://）批量转换为临时链接
- * 使用场景：云存储文件不能直接用于 <image> 标签，需先转为临时 HTTPS 链接
+ * 通过云函数调用（有 admin 权限），绕过免费版存储权限限制
+ * 注意：直接调用 wx.cloud.getTempFileURL 受存储权限限制，非上传者无法获取
  * @param {Array<string>} fileIds - cloud:// 格式的 fileID 数组
  * @returns {Promise<Object>} fileID -> tempFileURL 的映射对象
  */
 async function convertCloudFileIDs(fileIds) {
   if (!fileIds || fileIds.length === 0) return {};
   try {
-    const res = await wx.cloud.getTempFileURL({ fileList: fileIds });
+    // 通过云函数获取临时链接（云函数有 admin 权限，不受存储权限限制）
+    const res = await wx.cloud.callFunction({
+      name: 'getTempUrls',
+      data: { fileList: fileIds },
+    });
+    if (res.result && res.result.success && res.result.data) {
+      const map = {};
+      res.result.data.forEach(function (f) {
+        if (f.tempFileURL) {
+          map[f.fileID] = f.tempFileURL;
+        }
+      });
+      return map;
+    }
+    console.warn('云函数转换临时链接失败，尝试直接调用:', res.result);
+    // 云函数失败时，降级为直接调用（至少上传者自己的图片能显示）
+    const directRes = await wx.cloud.getTempFileURL({ fileList: fileIds });
     const map = {};
-    res.fileList.forEach(function (f) {
+    directRes.fileList.forEach(function (f) {
       if (f.tempFileURL) {
         map[f.fileID] = f.tempFileURL;
       }
