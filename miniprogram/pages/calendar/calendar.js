@@ -305,10 +305,11 @@ Page({
     // 婚礼是一次性事件，只倒计时到原始日期，过了就显示"结婚 X 天"
     var weddingItem = enriched.find(function (item) { return item.type === 'wedding'; });
     if (weddingItem) {
-      var weddingDate = new Date(weddingItem.date);
+      var d = new Date(weddingItem.date);
+      // 用本地时间构造，避免 new Date("YYYY-MM-DD") 被当成 UTC 导致时区偏移
+      var weddingDate = new Date(d.getFullYear(), d.getMonth(), d.getDate());
       var weddingDiffTime = today.getTime() - weddingDate.getTime();
       var weddingPassedDays = Math.floor(weddingDiffTime / (1000 * 60 * 60 * 24));
-      // 只算到原始日期的倒计时（不按年循环），避免过了之后显示"365天"
       var weddingCountdown = Math.ceil((weddingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
       this.setData({
         weddingCountdown: {
