@@ -5,6 +5,9 @@
 
 const app = getApp();
 
+// 图片 URL 内存缓存：fileID → base64/tempURL，避免重复查库
+var imageUrlCache = {};
+
 /**
  * 将图片压缩并转为 base64 Data URI
  * 使用 OffscreenCanvas 压缩，生成的 base64 存入 image_thumbs 集合，
@@ -337,8 +340,8 @@ function formatDateTime(dateStr) {
 
 /**
  * 将云存储 fileID（cloud://）批量转换为临时链接
- * 优先从 image_thumbs 集合查 base64 缩略图（跨用户可见，无需 Worker）
- * 查不到的旧数据降级走 Worker，Worker 失败则用 wx.cloud.getTempFileURL
+ * 优先从内存缓存获取，其次从 image_thumbs 集合查 base64 缩略图
+ * 查不到的降级走云函数 getTempUrls，最后 wx.cloud.getTempFileURL 兜底
  * @param {Array<string>} fileIds - cloud:// 格式的 fileID 数组
  * @returns {Promise<Object>} fileID -> url 的映射对象（base64 或 tempFileURL）
  */
@@ -346,37 +349,50 @@ async function convertCloudFileIDs(fileIds) {
   if (!fileIds || fileIds.length === 0) return {};
 
   var map = {};
-  var missIds = [];  // image_thumbs 中查不到的，需要走降级逻辑
+  var missIds = [];  // 缓存和 image_thumbs 都查不到的，需要走降级逻辑
+
+  // 第零层：内存缓存（最快，避免重复查库）
+  fileIds.forEach(function (fid) {
+    if (imageUrlCache[fid]) {
+      map[fid] = imageUrlCache[fid];
+    } else {
+      missIds.push(fid);
+    }
+  });
+
+  if (missIds.length === 0) return map;
 
   try {
     // 第一层：从 image_thumbs 集合查 base64 缩略图
     var db = app.getDb();
     var _ = db.command;
     var thumbRes = await db.collection('image_thumbs')
-      .where({ fileID: _.in(fileIds) })
+      .where({ fileID: _.in(missIds) })
       .get();
 
     thumbRes.data.forEach(function (item) {
       if (item.base64) {
         map[item.fileID] = item.base64;
+        imageUrlCache[item.fileID] = item.base64;  // 写入缓存
       }
     });
 
     // 找出没命中的 fileID
-    fileIds.forEach(function (fid) {
+    var stillMiss = [];
+    missIds.forEach(function (fid) {
       if (!map[fid]) {
-        missIds.push(fid);
+        stillMiss.push(fid);
       }
     });
+    missIds = stillMiss;
   } catch (e) {
-    // image_thumbs 查询失败（比如集合不存在），全部走降级
     console.warn('查询 image_thumbs 失败，全部走降级:', e);
-    missIds = fileIds.slice();
+    missIds = fileIds.filter(function (fid) { return !map[fid]; });
   }
 
   if (missIds.length === 0) return map;
 
-  // 第二层：没命中的走云函数 getTempUrls（admin 权限，绕过存储限制，最可靠）
+  // 第二层：没命中的走云函数 getTempUrls（admin 权限，绕过存储限制）
   try {
     var cfRes = await wx.cloud.callFunction({
       name: 'getTempUrls',
@@ -386,9 +402,9 @@ async function convertCloudFileIDs(fileIds) {
       cfRes.result.data.forEach(function (f) {
         if (f.tempFileURL && !map[f.fileID]) {
           map[f.fileID] = f.tempFileURL;
+          imageUrlCache[f.fileID] = f.tempFileURL;  // 写入缓存
         }
       });
-      // 检查是否还有未命中的
       var cfStillMiss = [];
       missIds.forEach(function (fid) {
         if (!map[fid]) cfStillMiss.push(fid);
@@ -401,45 +417,13 @@ async function convertCloudFileIDs(fileIds) {
 
   if (missIds.length === 0) return map;
 
-  // 第三层：没命中的走 Worker（应用级 access_token API）
-  var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getTempUrls';
-  try {
-    var resp = await new Promise(function (resolve, reject) {
-      wx.request({
-        url: WORKER_URL,
-        method: 'POST',
-        data: { fileList: missIds },
-        header: { 'Content-Type': 'application/json' },
-        success: resolve,
-        fail: reject,
-      });
-    });
-
-    if (resp.statusCode === 200 && resp.data && resp.data.success && resp.data.data) {
-      resp.data.data.forEach(function (f) {
-        if (f.tempFileURL && !map[f.fileID]) {
-          map[f.fileID] = f.tempFileURL;
-        }
-      });
-      // 检查是否还有未命中的
-      var stillMiss = [];
-      missIds.forEach(function (fid) {
-        if (!map[fid]) stillMiss.push(fid);
-      });
-      missIds = stillMiss;
-    }
-  } catch (e) {
-    console.warn('Worker 请求异常:', e);
-  }
-
-  if (missIds.length === 0) return map;
-
-  // 第四层：直接调用 wx.cloud.getTempFileURL（至少上传者自己的能看到）
+  // 第三层：直接调用 wx.cloud.getTempFileURL（至少上传者自己的能看到，兜底）
   try {
     var directRes = await wx.cloud.getTempFileURL({ fileList: missIds });
     directRes.fileList.forEach(function (f) {
       if (f.tempFileURL && !map[f.fileID]) {
         map[f.fileID] = f.tempFileURL;
+        imageUrlCache[f.fileID] = f.tempFileURL;  // 写入缓存
       }
     });
   } catch (e) {
