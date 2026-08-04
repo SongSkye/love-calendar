@@ -16,6 +16,7 @@ Page({
     moodMap: {},
     moodOptions: util.getMoodOptions(),
     nextAnniversary: null,
+    weddingCountdown: null,        // 婚礼倒计时 { title, countdownDays, date }
     hasTodayMood: false,
 
     // 纪念日标记和特效
@@ -298,6 +299,29 @@ Page({
           countdownDays: upcoming[0].countdownDays,
         }
       });
+    }
+
+    // 婚礼倒计时：找到 type=wedding 的纪念日
+    // 婚礼是一次性事件，只倒计时到原始日期，过了就显示"结婚 X 天"
+    var weddingItem = enriched.find(function (item) { return item.type === 'wedding'; });
+    if (weddingItem) {
+      var weddingDate = new Date(weddingItem.date);
+      var weddingDiffTime = today.getTime() - weddingDate.getTime();
+      var weddingPassedDays = Math.floor(weddingDiffTime / (1000 * 60 * 60 * 24));
+      // 只算到原始日期的倒计时（不按年循环），避免过了之后显示"365天"
+      var weddingCountdown = Math.ceil((weddingDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+      this.setData({
+        weddingCountdown: {
+          title: weddingItem.title,
+          countdownDays: weddingCountdown > 0 ? weddingCountdown : 0,
+          date: weddingItem.date,
+          totalDays: weddingPassedDays >= 0 ? weddingPassedDays : 0,
+          isToday: weddingCountdown === 0,
+          isPast: weddingCountdown < 0,
+        }
+      });
+    } else {
+      this.setData({ weddingCountdown: null });
     }
   },
 

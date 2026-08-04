@@ -18,7 +18,7 @@
       <view class="card-cover">
         <image wx:if="{{item.coverImage}}" src="{{item.coverImage}}" mode="aspectFill" class="cover-img"></image>
         <view wx:else class="cover-default">
-          <text class="cover-icon">{{item.type === 'together' ? '💕' : (item.type === 'birthday' ? '🎂' : '📌')}}</text>
+          <text class="cover-icon">{{item.type === 'together' ? '💕' : (item.type === 'birthday' ? '🎂' : (item.type === 'wedding' ? '💒' : '📌'))}}</text>
         </view>
       </view>
 

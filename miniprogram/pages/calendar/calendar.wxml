@@ -27,6 +27,24 @@
     </view>
   </view>
 
+  <!-- 婚礼倒计时卡片 -->
+  <view class="wedding-countdown-card {{weddingCountdown.isPast ? 'wedding-past' : ''}} {{weddingCountdown.isToday ? 'wedding-today' : ''}}" wx:if="{{weddingCountdown}}">
+    <view class="wedding-bg-decor"></view>
+    <view class="wedding-left">
+      <text class="wedding-icon">{{weddingCountdown.isPast ? '💍' : (weddingCountdown.isToday ? '🎉' : '💒')}}</text>
+      <view class="wedding-info">
+        <text class="wedding-label" wx:if="{{weddingCountdown.isPast}}">「{{weddingCountdown.title}}」已过去</text>
+        <text class="wedding-label" wx:elif="{{weddingCountdown.isToday}}">🎉 今天就是「{{weddingCountdown.title}}」！</text>
+        <text class="wedding-label" wx:else>距「{{weddingCountdown.title}}」还有</text>
+        <text class="wedding-date">{{weddingCountdown.date}}</text>
+      </view>
+    </view>
+    <view class="wedding-right">
+      <text class="wedding-days">{{weddingCountdown.isPast ? weddingCountdown.totalDays : (weddingCountdown.isToday ? '🎉' : weddingCountdown.countdownDays)}}</text>
+      <text class="wedding-unit">{{weddingCountdown.isPast ? '天' : (weddingCountdown.isToday ? '' : '天')}}</text>
+    </view>
+  </view>
+
   <!-- 悄悄话卡片 -->
   <view class="love-note-card" wx:if="{{loveNote}}" bindtap="openLoveNotePopup">
     <view class="love-note-header">
@@ -80,7 +98,7 @@
             wx:key="_id"
             wx:for-item="mark"
             wx:if="{{index < 2}}"
-          >{{mark.type === 'together' ? '❤️' : (mark.type === 'birthday' ? '🎂' : '⭐')}}</text>
+          >{{mark.type === 'together' ? '❤️' : (mark.type === 'birthday' ? '🎂' : (mark.type === 'wedding' ? '💒' : '⭐'))}}</text>
           <text wx:if="{{anniversaryDateMap[item.date.substring(5)].length > 2}}">...</text>
         </view>
         <!-- 心情表情 -->

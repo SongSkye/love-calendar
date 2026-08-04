@@ -38,6 +38,10 @@
           <text class="type-icon">🎂</text>
           <text class="type-label">生日</text>
         </view>
+        <view class="type-item {{type === 'wedding' ? 'active' : ''}}" bindtap="selectType" data-type="wedding">
+          <text class="type-icon">💒</text>
+          <text class="type-label">婚礼</text>
+        </view>
         <view class="type-item {{type === 'custom' ? 'active' : ''}}" bindtap="selectType" data-type="custom">
           <text class="type-icon">📌</text>
           <text class="type-label">其他</text>

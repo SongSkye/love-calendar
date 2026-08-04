@@ -156,6 +156,117 @@
   justify-content: center;
 }
 
+/* ===== 婚礼倒计时卡片 ===== */
+.wedding-countdown-card {
+  background: linear-gradient(135deg, #FFF5F7, #FFE8EC, #FCE4EC);
+  border-radius: 24rpx;
+  padding: 28rpx 30rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 6rpx 24rpx rgba(255, 107, 129, 0.15);
+  border: 2rpx solid rgba(255, 107, 129, 0.2);
+  position: relative;
+  overflow: hidden;
+}
+
+.wedding-bg-decor {
+  position: absolute;
+  top: -30rpx;
+  right: -20rpx;
+  width: 120rpx;
+  height: 120rpx;
+  background: rgba(255, 107, 129, 0.06);
+  border-radius: 50%;
+  pointer-events: none;
+}
+
+.wedding-left {
+  display: flex;
+  align-items: center;
+  flex: 1;
+  min-width: 0;
+  position: relative;
+  z-index: 1;
+}
+
+.wedding-icon {
+  font-size: 48rpx;
+  margin-right: 16rpx;
+  flex-shrink: 0;
+}
+
+.wedding-info {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.wedding-label {
+  font-size: 24rpx;
+  color: #666666;
+  margin-bottom: 4rpx;
+}
+
+.wedding-date {
+  font-size: 22rpx;
+  color: #999999;
+}
+
+.wedding-right {
+  display: flex;
+  align-items: baseline;
+  flex-shrink: 0;
+  margin-left: 16rpx;
+  position: relative;
+  z-index: 1;
+}
+
+.wedding-days {
+  font-size: 56rpx;
+  font-weight: bold;
+  color: #FF6B81;
+  line-height: 1;
+}
+
+.wedding-unit {
+  font-size: 24rpx;
+  color: #FF6B81;
+  margin-left: 4rpx;
+}
+
+/* 婚礼当天样式 */
+.wedding-countdown-card.wedding-today {
+  background: linear-gradient(135deg, #FFF8E1, #FFECB3, #FFE082);
+  border-color: rgba(255, 193, 7, 0.4);
+  animation: weddingTodayPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes weddingTodayPulse {
+  0% { box-shadow: 0 6rpx 24rpx rgba(255, 193, 7, 0.2); }
+  100% { box-shadow: 0 6rpx 40rpx rgba(255, 193, 7, 0.5); }
+}
+
+.wedding-countdown-card.wedding-today .wedding-days {
+  font-size: 80rpx;
+  color: #FF8F00;
+}
+
+/* 婚礼已过样式 */
+.wedding-countdown-card.wedding-past {
+  background: linear-gradient(135deg, #F5F0FF, #EDE7F6, #E8E0F0);
+  border-color: rgba(156, 39, 176, 0.15);
+}
+
+.wedding-countdown-card.wedding-past .wedding-days {
+  color: #9C27B0;
+}
+
+.wedding-countdown-card.wedding-past .wedding-unit {
+  color: #9C27B0;
+}
+
 /* ===== 悄悄话卡片 ===== */
 .love-note-card {
   background: #FFFFFF;

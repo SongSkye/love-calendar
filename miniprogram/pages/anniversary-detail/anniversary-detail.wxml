@@ -10,7 +10,7 @@
     <view class="detail-cover">
       <image wx:if="{{anniversary.coverImage}}" src="{{anniversary.coverImage}}" mode="aspectFill" class="cover-img"></image>
       <view wx:else class="cover-default">
-        <text class="cover-icon">{{anniversary.type === 'together' ? '💕' : (anniversary.type === 'birthday' ? '🎂' : '📌')}}</text>
+        <text class="cover-icon">{{anniversary.type === 'together' ? '💕' : (anniversary.type === 'birthday' ? '🎂' : (anniversary.type === 'wedding' ? '💒' : '📌'))}}</text>
       </view>
       <view class="cover-info">
         <view class="cover-title">{{anniversary.title}}</view>

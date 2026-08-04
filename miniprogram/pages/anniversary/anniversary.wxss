@@ -58,6 +58,10 @@
   background: linear-gradient(135deg, #F0F8FF, #D0E8FF);
 }
 
+.anniversary-card.wedding .cover-default {
+  background: linear-gradient(135deg, #FFF0F5, #FFD6E0);
+}
+
 /* 卡片主体 */
 .card-body {
   display: flex;
