@@ -76,14 +76,15 @@ function readFileAsBase64(filePath, resolve, reject) {
 async function saveImageThumb(fileID, base64) {
   try {
     var db = app.getDb();
+    var coupleId = app.globalData.coupleId || '';
     var existRes = await db.collection('image_thumbs').where({ fileID: fileID }).get();
     if (existRes.data.length > 0) {
       await db.collection('image_thumbs').doc(existRes.data[0]._id).update({
-        data: { base64: base64, updatedAt: new Date().toISOString() }
+        data: { base64: base64, coupleId: coupleId, updatedAt: new Date().toISOString() }
       });
     } else {
       await db.collection('image_thumbs').add({
-        data: { fileID: fileID, base64: base64, createdAt: new Date().toISOString() }
+        data: { fileID: fileID, base64: base64, coupleId: coupleId, createdAt: new Date().toISOString() }
       });
     }
   } catch (err) {
@@ -375,7 +376,32 @@ async function convertCloudFileIDs(fileIds) {
 
   if (missIds.length === 0) return map;
 
-  // 第二层：没命中的走 Worker
+  // 第二层：没命中的走云函数 getTempUrls（admin 权限，绕过存储限制，最可靠）
+  try {
+    var cfRes = await wx.cloud.callFunction({
+      name: 'getTempUrls',
+      data: { fileList: missIds },
+    });
+    if (cfRes.result && cfRes.result.success && cfRes.result.data) {
+      cfRes.result.data.forEach(function (f) {
+        if (f.tempFileURL && !map[f.fileID]) {
+          map[f.fileID] = f.tempFileURL;
+        }
+      });
+      // 检查是否还有未命中的
+      var cfStillMiss = [];
+      missIds.forEach(function (fid) {
+        if (!map[fid]) cfStillMiss.push(fid);
+      });
+      missIds = cfStillMiss;
+    }
+  } catch (e) {
+    console.warn('云函数 getTempUrls 失败:', e);
+  }
+
+  if (missIds.length === 0) return map;
+
+  // 第三层：没命中的走 Worker（应用级 access_token API）
   var WORKER_URL = 'https://love-calendar.zhaoqingyi.workers.dev/api/getTempUrls';
   try {
     var resp = await new Promise(function (resolve, reject) {
@@ -408,7 +434,7 @@ async function convertCloudFileIDs(fileIds) {
 
   if (missIds.length === 0) return map;
 
-  // 第三层：直接调用 wx.cloud.getTempFileURL（至少上传者自己的能看到）
+  // 第四层：直接调用 wx.cloud.getTempFileURL（至少上传者自己的能看到）
   try {
     var directRes = await wx.cloud.getTempFileURL({ fileList: missIds });
     directRes.fileList.forEach(function (f) {
