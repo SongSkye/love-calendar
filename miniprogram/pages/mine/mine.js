@@ -46,10 +46,6 @@ Page({
         user = userRes.data[0];
         this.setData({ userInfo: user });
         app.globalData.userInfo = user;
-        // 头像转临时链接
-        if (user.avatar && user.avatar.indexOf('cloud://') === 0) {
-          this.convertAvatar(user.avatar, 'userInfo');
-        }
       }
       if (!user) return;
 
@@ -64,10 +60,14 @@ Page({
       if (partner) {
         this.setData({ partnerInfo: partner });
         app.globalData.partnerInfo = partner;
-        // 对方头像转临时链接
-        if (partner.avatar && partner.avatar.indexOf('cloud://') === 0) {
-          this.convertAvatar(partner.avatar, 'partnerInfo');
-        }
+      }
+
+      // 批量转换双方头像（一次查库，避免两次请求）
+      var avatarIds = [];
+      if (user.avatar && user.avatar.indexOf('cloud://') === 0) avatarIds.push(user.avatar);
+      if (partner && partner.avatar && partner.avatar.indexOf('cloud://') === 0) avatarIds.push(partner.avatar);
+      if (avatarIds.length > 0) {
+        this.convertAvatars(avatarIds);
       }
 
       var coupleRes = await db.collection('couples').doc(coupleId).get();
@@ -80,14 +80,21 @@ Page({
   },
 
   /**
-   * 将云存储 fileID 转为临时链接
+   * 批量转换云存储 fileID，同时更新 userInfo 和 partnerInfo 的头像
    */
-  convertAvatar: function (fileID, key) {
+  convertAvatars: function (fileIDs) {
     var that = this;
-    util.convertCloudFileIDs([fileID]).then(function (urlMap) {
-      if (urlMap[fileID]) {
-        var update = {};
-        update[key] = Object.assign({}, that.data[key], { avatar: urlMap[fileID] });
+    util.convertCloudFileIDs(fileIDs).then(function (urlMap) {
+      var update = {};
+      var userAvatar = that.data.userInfo.avatar;
+      var partnerAvatar = that.data.partnerInfo && that.data.partnerInfo.avatar;
+      if (userAvatar && urlMap[userAvatar]) {
+        update.userInfo = Object.assign({}, that.data.userInfo, { avatar: urlMap[userAvatar] });
+      }
+      if (partnerAvatar && urlMap[partnerAvatar]) {
+        update.partnerInfo = Object.assign({}, that.data.partnerInfo, { avatar: urlMap[partnerAvatar] });
+      }
+      if (Object.keys(update).length > 0) {
         that.setData(update);
       }
     });
