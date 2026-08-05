@@ -44,7 +44,9 @@ Page({
       }
       if (userRes.data.length > 0) {
         user = userRes.data[0];
-        this.setData({ userInfo: user });
+        // 头像先不设置（等转换完成后再设），避免 cloud:// 地址闪现
+        var displayUser = Object.assign({}, user, { avatar: '' });
+        this.setData({ userInfo: displayUser });
         app.globalData.userInfo = user;
       }
       if (!user) return;
@@ -58,7 +60,9 @@ Page({
         if (!isMe) { partner = u; break; }
       }
       if (partner) {
-        this.setData({ partnerInfo: partner });
+        // 头像先不设置（等转换完成后再设），避免 cloud:// 地址闪现
+        var displayPartner = Object.assign({}, partner, { avatar: '' });
+        this.setData({ partnerInfo: displayPartner });
         app.globalData.partnerInfo = partner;
       }
 
@@ -67,7 +71,7 @@ Page({
       if (user.avatar && user.avatar.indexOf('cloud://') === 0) avatarIds.push(user.avatar);
       if (partner && partner.avatar && partner.avatar.indexOf('cloud://') === 0) avatarIds.push(partner.avatar);
       if (avatarIds.length > 0) {
-        this.convertAvatars(avatarIds);
+        this.convertAvatars(avatarIds, user, partner);
       }
 
       var coupleRes = await db.collection('couples').doc(coupleId).get();
@@ -80,33 +84,31 @@ Page({
   },
 
   /**
-   * 批量转换云存储 fileID，同时更新 userInfo 和 partnerInfo 的头像
+   * 批量转换云存储 fileID，转换成功后才设置头像
+   * @param {Array} fileIDs - cloud:// fileID 数组
+   * @param {Object} rawUser - 原始用户数据（含 cloud:// avatar）
+   * @param {Object} rawPartner - 原始对方数据（含 cloud:// avatar）
    */
-  convertAvatars: function (fileIDs) {
+  convertAvatars: function (fileIDs, rawUser, rawPartner) {
     var that = this;
     util.convertCloudFileIDs(fileIDs).then(function (urlMap) {
       var update = {};
-      var userAvatar = that.data.userInfo.avatar;
-      var partnerAvatar = that.data.partnerInfo && that.data.partnerInfo.avatar;
 
-      // 用户头像转换：如果 urlMap 中有则用，没有则保留原 cloud:// fileID（image 组件可直接渲染）
-      if (userAvatar) {
-        var newUserAvatar = urlMap[userAvatar] || userAvatar;
-        update.userInfo = Object.assign({}, that.data.userInfo, { avatar: newUserAvatar });
+      // 用户头像：转换成功才设置
+      if (rawUser && rawUser.avatar && urlMap[rawUser.avatar]) {
+        update.userInfo = Object.assign({}, that.data.userInfo, { avatar: urlMap[rawUser.avatar] });
       }
 
-      // 对方头像转换
-      if (partnerAvatar) {
-        var newPartnerAvatar = urlMap[partnerAvatar] || partnerAvatar;
-        update.partnerInfo = Object.assign({}, that.data.partnerInfo, { avatar: newPartnerAvatar });
+      // 对方头像：转换成功才设置
+      if (rawPartner && rawPartner.avatar && urlMap[rawPartner.avatar]) {
+        update.partnerInfo = Object.assign({}, that.data.partnerInfo, { avatar: urlMap[rawPartner.avatar] });
       }
 
       if (Object.keys(update).length > 0) {
         that.setData(update);
       }
     }).catch(function (err) {
-      console.warn('convertAvatars 失败，保留原始 cloud:// fileID:', err);
-      // 转换失败时不做任何操作，image 组件会尝试直接渲染 cloud:// fileID
+      console.warn('convertAvatars 失败:', err);
     });
   },
 

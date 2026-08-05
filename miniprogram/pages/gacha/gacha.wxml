@@ -21,6 +21,29 @@
     </view>
   </view>
 
+  <!-- 今日已抽卡片（放在扭蛋机上方，始终可见） -->
+  <view class="today-records" wx:if="{{hasRecords}}">
+    <text class="section-title">📋 今日抽到（{{todayRecords.length}}张）</text>
+    <scroll-view class="records-scroll" scroll-x>
+      <view class="records-list">
+        <view
+          class="record-item"
+          wx:for="{{todayRecords}}"
+          wx:key="_id"
+          wx:for-item="record"
+        >
+          <view class="record-card" style="border-color: {{record.cardColor}}; box-shadow: 0 4rpx 16rpx {{record.cardColor}}33;">
+            <text class="record-emoji">{{record.cardEmoji}}</text>
+            <text class="record-title">{{record.cardTitle}}</text>
+            <view class="record-rarity-tag" style="background: {{record.cardColor}};">
+              <text>{{record.rarityLabel}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
   <!-- 扭蛋机区域 -->
   <view class="gacha-machine-area">
     <!-- 扭蛋机主体 -->
@@ -44,7 +67,6 @@
       <!-- 出口 -->
       <view class="machine-outlet">
         <view class="outlet-hole">
-          <!-- 蛋掉落动画 -->
           <text class="falling-egg {{animationPhase === 'opening' || animationPhase === 'reveal' ? 'fall' : ''}}">🥚</text>
         </view>
       </view>
@@ -66,24 +88,6 @@
     </view>
   </view>
 
-  <!-- 今日已抽记录 -->
-  <view class="today-records" wx:if="{{todayRecords.length > 0}}">
-    <text class="section-title">📋 今日抽到</text>
-    <view class="records-list">
-      <view
-        class="record-item"
-        wx:for="{{todayRecords}}"
-        wx:key="_id"
-        wx:for-item="record"
-      >
-        <view class="record-card" style="border-color: {{record.cardColor}};">
-          <text class="record-emoji">{{record.cardEmoji}}</text>
-          <text class="record-title">{{record.cardTitle}}</text>
-        </view>
-      </view>
-    </view>
-  </view>
-
   <!-- 底部导航 -->
   <view class="gacha-bottom-nav">
     <view class="nav-btn" bindtap="goCollection">
@@ -94,18 +98,18 @@
 </view>
 
 <!-- 抽卡结果弹窗 -->
-<view class="result-mask" wx:if="{{showResult}}" bindtap="closeResult">
-  <view class="result-popup" catchtap="noop" style="border-color: {{resultCard.color}}; box-shadow: 0 0 40rpx {{resultCard.color}}33;">
+<view class="result-mask" wx:if="{{showResult && resultCard}}" bindtap="closeResult">
+  <view class="result-popup" catchtap="noop" style="border-color: {{resultCard.cardColor}}; box-shadow: 0 0 40rpx {{resultCard.cardColor}}33;">
     <!-- 稀有度标签 -->
-    <view class="result-rarity" style="background: {{resultCard.color}};">
-      <text class="rarity-text">{{resultCard.rarity === 4 ? '⭐ 传说' : resultCard.rarity === 3 ? '⭐ 史诗' : resultCard.rarity === 2 ? '⭐ 稀有' : '⭐ 普通'}}</text>
+    <view class="result-rarity" style="background: {{resultCard.cardColor}};">
+      <text class="rarity-text">⭐ {{resultCard.rarityLabel}}</text>
     </view>
 
     <!-- 卡片内容 -->
-    <text class="result-emoji">{{resultCard.emoji}}</text>
-    <text class="result-title">{{resultCard.title}}</text>
-    <text class="result-desc">{{resultCard.description}}</text>
-    <text class="result-set">📦 {{resultCard.setName}}</text>
+    <text class="result-emoji">{{resultCard.cardEmoji}}</text>
+    <text class="result-title">{{resultCard.cardTitle}}</text>
+    <text class="result-desc">{{resultCard.cardDesc}}</text>
+    <text class="result-set">📦 {{resultCard.cardSetName}}</text>
 
     <!-- 按钮 -->
     <view class="result-actions">

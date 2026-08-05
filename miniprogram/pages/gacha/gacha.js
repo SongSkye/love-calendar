@@ -15,17 +15,17 @@ Page({
     // 扭蛋动画状态
     showAnimation: false,   // 显示扭蛋动画
     animationPhase: 'idle', // idle → shaking → opening → reveal
-    resultCard: null,       // 抽到的卡片
+    resultCard: null,       // 抽到的卡片（带完整信息）
 
-    // 今日已抽记录
+    // 今日已抽记录（已拼接好卡片信息）
     todayRecords: [],
+    hasRecords: false,      // 是否有今日记录
 
     // 弹窗
     showResult: false,      // 显示抽卡结果弹窗
   },
 
   onLoad: function () {
-    // 等待 openid 就绪
     if (!app.globalData.openidReady) {
       var that = this;
       setTimeout(function () { that.onLoad(); }, 300);
@@ -64,28 +64,31 @@ Page({
       var recordsRes = await db.collection('gacha_records').where({
         coupleId: coupleId, uid: myUid, date: today
       }).get();
-      var todayRecords = recordsRes.data;
+      var rawRecords = recordsRes.data;
 
-      // 2. 计算已用次数和剩余次数
-      var usedPulls = todayRecords.length;
-
-      // 附加卡片信息到每条记录（WXML 中无法调用方法，需提前处理）
+      // 2. 附加卡片信息（WXML 中无法调用方法，需提前处理）
       var allCards = util.getGachaCards();
       var cardMap = {};
       allCards.forEach(function (c) { cardMap[c.cardId] = c; });
-      todayRecords = todayRecords.map(function (r) {
+      var todayRecords = rawRecords.map(function (r) {
         var card = cardMap[r.cardId] || {};
+        var rarityCfg = util.getRarityConfig(card.rarity || 1);
         return {
           _id: r._id,
           cardId: r.cardId,
           cardEmoji: card.emoji || '❓',
           cardTitle: card.title || '未知卡片',
+          cardDesc: card.description || '',
           cardColor: card.color || '#CCCCCC',
           cardRarity: card.rarity || 1,
+          rarityLabel: rarityCfg.label,
+          cardSetName: card.setName || '',
         };
       });
 
-      // 3. 计算获得的额外次数（心情+1，日记+1）
+      // 3. 计算剩余次数
+      var usedPulls = todayRecords.length;
+
       var bonusPulls = 0;
       try {
         var moodRes = await db.collection('moods').where({
@@ -99,13 +102,14 @@ Page({
         if (diaryRes.data.length > 0) bonusPulls += 1;
       } catch (e) { /* 忽略 */ }
 
-      var totalPulls = 1 + bonusPulls;  // 基础1次 + 额外
+      var totalPulls = 1 + bonusPulls;
       var freePulls = Math.max(0, totalPulls - usedPulls);
 
       this.setData({
         freePulls: freePulls,
         maxPulls: totalPulls,
         todayRecords: todayRecords,
+        hasRecords: todayRecords.length > 0,
       });
     } catch (err) {
       console.error('加载扭蛋数据失败:', err);
@@ -122,26 +126,38 @@ Page({
       return;
     }
 
+    // 抽卡（先抽出来，动画播完再展示）
+    var card = util.drawGachaCard();
+    var rarityCfg = util.getRarityConfig(card.rarity);
+    var resultCard = {
+      cardId: card.cardId,
+      cardEmoji: card.emoji,
+      cardTitle: card.title,
+      cardDesc: card.description,
+      cardColor: card.color,
+      cardRarity: card.rarity,
+      rarityLabel: rarityCfg.label,
+      cardSetName: card.setName,
+    };
+
     this.setData({ pulling: true, showAnimation: true, animationPhase: 'shaking', resultCard: null });
 
-    // 1. 扭蛋震动动画（1.5秒）
     var that = this;
+
+    // 1. 蛋壳震动动画（1.5秒）
     setTimeout(function () {
       that.setData({ animationPhase: 'opening' });
     }, 1500);
 
-    // 2. 蛋壳打开动画（0.5秒）
+    // 2. 蛋壳打开 + 抽卡结果（0.5秒后）
     setTimeout(function () {
-      // 抽卡
-      var card = util.drawGachaCard();
-      that.setData({ animationPhase: 'reveal', resultCard: card });
+      that.setData({ animationPhase: 'reveal', resultCard: resultCard });
     }, 2000);
 
-    // 3. 显示结果弹窗（0.5秒后）
+    // 3. 显示结果弹窗 + 保存到数据库（0.5秒后）
     setTimeout(async function () {
       that.setData({ showAnimation: false, showResult: true, animationPhase: 'idle' });
 
-      // 保存到数据库
       var db = app.getDb();
       var coupleId = app.globalData.coupleId;
       var myUid = app.getUserId();
@@ -162,15 +178,32 @@ Page({
       }
 
       that.setData({ pulling: false });
-      that.loadData();
     }, 2500);
   },
 
   /**
-   * 关闭结果弹窗
+   * 收下卡片：关闭弹窗，立即把卡片加到列表，同时后台刷新
    */
   closeResult() {
+    var card = this.data.resultCard;
     this.setData({ showResult: false });
+
+    if (card) {
+      // 立即追加到今日记录列表
+      var todayRecords = this.data.todayRecords.concat([card]);
+      var usedPulls = todayRecords.length;
+      var freePulls = Math.max(0, this.data.maxPulls - usedPulls);
+
+      this.setData({
+        todayRecords: todayRecords,
+        hasRecords: true,
+        freePulls: freePulls,
+        resultCard: null,
+      });
+
+      // 后台静默刷新（确保与数据库一致）
+      this.loadData();
+    }
   },
 
   /**
@@ -178,17 +211,6 @@ Page({
    */
   goCollection() {
     wx.navigateTo({ url: '/pages/gacha-collection/gacha-collection' });
-  },
-
-  /**
-   * 获取已抽到的卡片信息
-   */
-  getCardInfo: function (cardId) {
-    var cards = util.getGachaCards();
-    for (var i = 0; i < cards.length; i++) {
-      if (cards[i].cardId === cardId) return cards[i];
-    }
-    return null;
   },
 
   noop: function () {},

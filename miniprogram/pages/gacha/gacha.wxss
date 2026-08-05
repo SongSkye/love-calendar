@@ -274,38 +274,59 @@
   margin-bottom: 16rpx;
 }
 
+.records-scroll {
+  width: 100%;
+  white-space: nowrap;
+}
+
 .records-list {
   display: flex;
-  flex-wrap: wrap;
-  gap: 12rpx;
+  gap: 16rpx;
+  padding: 4rpx 0;
 }
 
 .record-item {
-  width: calc(50% - 6rpx);
+  width: 280rpx;
+  flex-shrink: 0;
 }
 
 .record-card {
   background: #FFFFFF;
-  border-radius: 16rpx;
-  padding: 20rpx;
-  border-left: 6rpx solid;
+  border-radius: 20rpx;
+  padding: 24rpx;
+  border: 3rpx solid;
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: 12rpx;
-  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+  min-height: 200rpx;
+  position: relative;
 }
 
 .record-emoji {
-  font-size: 36rpx;
-  flex-shrink: 0;
+  font-size: 56rpx;
 }
 
 .record-title {
-  font-size: 24rpx;
+  font-size: 26rpx;
   color: #333333;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  font-weight: bold;
+  text-align: center;
+  white-space: normal;
+  word-break: break-all;
+}
+
+.record-rarity-tag {
+  position: absolute;
+  top: 12rpx;
+  right: 12rpx;
+  padding: 4rpx 12rpx;
+  border-radius: 12rpx;
+}
+
+.record-rarity-tag text {
+  font-size: 18rpx;
+  color: #FFFFFF;
 }
 
 /* ===== 底部导航 ===== */
