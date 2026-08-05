@@ -74,7 +74,10 @@
         </view>
       </view>
     </view>
-    <view class="tree-gacha-entry" bindtap="goGacha">
+    <view class="tree-help-btn" bindtap="showTreeHelp" catchtap="showTreeHelp">
+      <text class="help-icon">❓</text>
+    </view>
+    <view class="tree-gacha-entry" bindtap="goGacha" catchtap="goGacha">
       <text class="gacha-icon">🎁</text>
       <text class="gacha-text">扭蛋</text>
     </view>
@@ -349,6 +352,84 @@
     </view>
     <view class="tree-detail-empty" wx:if="{{treeWateringList.length === 0}}">
       <text>暂无浇水记录，开始今天的互动吧 💕</text>
+    </view>
+  </view>
+</view>
+
+<!-- 爱情树玩法说明弹窗 -->
+<view class="mood-popup-mask" wx:if="{{showTreeHelp}}" bindtap="closeTreeHelp">
+  <view class="tree-detail-popup" catchtap="noop">
+    <view class="popup-header">
+      <text class="popup-title">🌳 爱情树玩法</text>
+      <view class="popup-close" bindtap="closeTreeHelp">✕</view>
+    </view>
+    <view class="tree-help-content">
+      <view class="help-section">
+        <text class="help-section-title">💧 如何浇水？</text>
+        <text class="help-text">每天完成以下任意互动，自动为树浇水：</text>
+        <view class="help-steps">
+          <view class="help-step">
+            <text class="help-step-icon">😊</text>
+            <text class="help-step-text">记录心情 → 浇水 1 次</text>
+          </view>
+          <view class="help-step">
+            <text class="help-step-icon">📝</text>
+            <text class="help-step-text">写日记 → 浇水 1 次</text>
+          </view>
+          <view class="help-step">
+            <text class="help-step-icon">💌</text>
+            <text class="help-step-text">发悄悄话 → 浇水 1 次</text>
+          </view>
+        </view>
+      </view>
+      <view class="help-section">
+        <text class="help-section-title">🌸 如何开花？</text>
+        <text class="help-text">双方当天都浇过水（至少 1 次），树就会开 1 朵花！每天最多开 1 朵。</text>
+      </view>
+      <view class="help-section">
+        <text class="help-section-title">🌱 成长阶段</text>
+        <view class="help-stages">
+          <view class="help-stage">
+            <text class="help-stage-emoji">🌱</text>
+            <text class="help-stage-name">种子</text>
+            <text class="help-stage-count">0 朵花</text>
+          </view>
+          <text class="help-stage-arrow">→</text>
+          <view class="help-stage">
+            <text class="help-stage-emoji">🌿</text>
+            <text class="help-stage-name">发芽</text>
+            <text class="help-stage-count">1~3 朵</text>
+          </view>
+          <text class="help-stage-arrow">→</text>
+          <view class="help-stage">
+            <text class="help-stage-emoji">🪴</text>
+            <text class="help-stage-name">幼苗</text>
+            <text class="help-stage-count">4~10 朵</text>
+          </view>
+          <text class="help-stage-arrow">→</text>
+          <view class="help-stage">
+            <text class="help-stage-emoji">🌳</text>
+            <text class="help-stage-name">小树</text>
+            <text class="help-stage-count">11~30 朵</text>
+          </view>
+          <text class="help-stage-arrow">→</text>
+          <view class="help-stage">
+            <text class="help-stage-emoji">🌸</text>
+            <text class="help-stage-name">开花树</text>
+            <text class="help-stage-count">31~60 朵</text>
+          </view>
+          <text class="help-stage-arrow">→</text>
+          <view class="help-stage">
+            <text class="help-stage-emoji">🍎</text>
+            <text class="help-stage-name">结果树</text>
+            <text class="help-stage-count">61+ 朵</text>
+          </view>
+        </view>
+      </view>
+      <view class="help-section">
+        <text class="help-section-title">💡 小提示</text>
+        <text class="help-text">树是你们共同的，一起浇水才能开花。每天互动的习惯，就是最好的养料 💕</text>
+      </view>
     </view>
   </view>
 </view>

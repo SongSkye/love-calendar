@@ -1109,3 +1109,107 @@
   font-size: 26rpx;
   color: #CCCCCC;
 }
+
+/* ===== 爱情树帮助按钮 ===== */
+.tree-help-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12rpx 16rpx;
+  margin-left: 8rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
+}
+
+.help-icon {
+  font-size: 28rpx;
+  color: #999999;
+}
+
+/* ===== 爱情树玩法说明弹窗 ===== */
+.tree-help-content {
+  padding: 0 10rpx;
+}
+
+.help-section {
+  margin-bottom: 28rpx;
+}
+
+.help-section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 12rpx;
+}
+
+.help-text {
+  font-size: 26rpx;
+  color: #666666;
+  line-height: 1.6;
+  display: block;
+}
+
+.help-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 12rpx;
+  margin-top: 12rpx;
+}
+
+.help-step {
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  padding: 14rpx 20rpx;
+  background: #FFF5F6;
+  border-radius: 12rpx;
+}
+
+.help-step-icon {
+  font-size: 32rpx;
+}
+
+.help-step-text {
+  font-size: 26rpx;
+  color: #333333;
+}
+
+.help-stages {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8rpx;
+  margin-top: 12rpx;
+}
+
+.help-stage {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10rpx;
+  background: #F0FFF0;
+  border-radius: 12rpx;
+  min-width: 88rpx;
+}
+
+.help-stage-emoji {
+  font-size: 36rpx;
+  margin-bottom: 4rpx;
+}
+
+.help-stage-name {
+  font-size: 20rpx;
+  color: #333333;
+  font-weight: bold;
+}
+
+.help-stage-count {
+  font-size: 18rpx;
+  color: #999999;
+}
+
+.help-stage-arrow {
+  font-size: 24rpx;
+  color: #CCCCCC;
+}

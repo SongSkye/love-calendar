@@ -62,6 +62,7 @@ Page({
     partnerWatered: false,      // 对方今天是否浇过水
     showTreeDetail: false,      // 树详情弹窗
     treeWateringList: [],       // 近7天浇水记录
+    showTreeHelp: false,        // 树玩法说明弹窗
   },
 
   onLoad() {
@@ -899,6 +900,20 @@ Page({
    */
   closeTreeDetail() {
     this.setData({ showTreeDetail: false });
+  },
+
+  /**
+   * 打开爱情树玩法说明
+   */
+  showTreeHelp() {
+    this.setData({ showTreeHelp: true });
+  },
+
+  /**
+   * 关闭爱情树玩法说明
+   */
+  closeTreeHelp() {
+    this.setData({ showTreeHelp: false });
   },
 
   /**
