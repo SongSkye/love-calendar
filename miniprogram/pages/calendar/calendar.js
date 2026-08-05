@@ -52,6 +52,16 @@ Page({
     moodStatsTopLabel: '',   // 占比最高的心情
     moodStatsTopPercent: 0,  // 最高占比
     allMoodsCache: null,     // 全部心情缓存（用于维度切换时前端过滤）
+
+    // 爱情树
+    treeEmoji: '🌱',           // 树的 emoji
+    treeStageLabel: '种子',      // 阶段标签
+    treeProgress: 0,            // 阶段进度 0-100
+    totalFlowers: 0,            // 累计开花数
+    myWatered: false,           // 我今天是否浇过水
+    partnerWatered: false,      // 对方今天是否浇过水
+    showTreeDetail: false,      // 树详情弹窗
+    treeWateringList: [],       // 近7天浇水记录
   },
 
   onLoad() {
@@ -252,6 +262,9 @@ Page({
 
       // 4. 加载今日悄悄话
       await this.loadTodayLoveNotes();
+
+      // 5. 加载爱情树数据
+      await this.loadTreeData();
 
     } catch (err) {
       console.error('加载数据失败:', err);
@@ -697,6 +710,198 @@ Page({
     wx.setStorageSync('celebration_dismissed_date', util.getToday());
     this.setData({ showCelebrationPopup: false });
   },
+
+  /**
+   * 加载爱情树数据
+   * 自动检测今日互动并补录浇水记录，然后计算树的成长状态
+   */
+  async loadTreeData() {
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    var myUid = app.getUserId();
+    var partnerUid = app.globalData.partnerInfo
+      ? (app.globalData.partnerInfo.openid || app.globalData.partnerInfo.uid)
+      : '';
+    var today = util.getToday();
+
+    try {
+      // 1. 确保 love_tree 记录存在
+      var treeRes = await db.collection('love_tree').where({ coupleId: coupleId }).get();
+      if (treeRes.data.length === 0) {
+        await db.collection('love_tree').add({
+          data: { coupleId: coupleId, totalFlowers: 0, createdAt: new Date().toISOString() }
+        });
+        treeRes = await db.collection('love_tree').where({ coupleId: coupleId }).get();
+      }
+      var treeData = treeRes.data[0];
+
+      // 2. 自动补录浇水：检测今日心情
+      var myMoodToday = this.data.allMoodsCache
+        ? this.data.allMoodsCache.some(function (m) { return m.uid === myUid && m.date === today; })
+        : false;
+      if (myMoodToday) {
+        await this.ensureWaterRecord(coupleId, myUid, today, 'mood');
+      }
+
+      // 3. 自动补录浇水：检测今日悄悄话
+      if (this.data.myLoveNote) {
+        await this.ensureWaterRecord(coupleId, myUid, today, 'lovenote');
+      }
+
+      // 4. 自动补录浇水：检测今日日记
+      try {
+        var diaryRes = await db.collection('diaries').where({ coupleId: coupleId, uid: myUid, date: today }).get();
+        if (diaryRes.data.length > 0) {
+          await this.ensureWaterRecord(coupleId, myUid, today, 'diary');
+        }
+      } catch (e) { /* 忽略日记查询失败 */ }
+
+      // 5. 查询今日所有浇水记录
+      var waterRes = await db.collection('watering_records').where({ coupleId: coupleId, date: today }).get();
+      var myWatered = false;
+      var partnerWatered = false;
+      waterRes.data.forEach(function (r) {
+        if (r.uid === myUid) myWatered = true;
+        if (partnerUid && r.uid === partnerUid) partnerWatered = true;
+      });
+
+      // 6. 判断今天是否双方都浇水 → 开花
+      var bothWatered = myWatered && partnerWatered;
+
+      // 7. 计算成长阶段
+      var totalFlowers = treeData.totalFlowers || 0;
+      var stageInfo = util.getTreeStage(totalFlowers);
+      var progress = util.getTreeProgress(totalFlowers);
+
+      this.setData({
+        treeEmoji: stageInfo.emoji,
+        treeStageLabel: stageInfo.label,
+        treeProgress: progress,
+        totalFlowers: totalFlowers,
+        myWatered: myWatered,
+        partnerWatered: partnerWatered,
+      });
+
+      // 8. 如果双方都浇水了但还没开花，补开花
+      if (bothWatered) {
+        var todayStr = today;
+        var alreadyBloomed = false;
+        // 检查 watering_records 中今天是否已有 bloom 记录
+        waterRes.data.forEach(function (r) {
+          if (r.source === 'bloom') alreadyBloomed = true;
+        });
+        if (!alreadyBloomed) {
+          try {
+            await db.collection('watering_records').add({
+              data: { coupleId: coupleId, uid: 'system', date: today, source: 'bloom', createdAt: new Date().toISOString() }
+            });
+            await db.collection('love_tree').doc(treeData._id).update({
+              data: { totalFlowers: db.command.inc(1) }
+            });
+            totalFlowers = totalFlowers + 1;
+            stageInfo = util.getTreeStage(totalFlowers);
+            progress = util.getTreeProgress(totalFlowers);
+            this.setData({
+              totalFlowers: totalFlowers,
+              treeEmoji: stageInfo.emoji,
+              treeStageLabel: stageInfo.label,
+              treeProgress: progress,
+            });
+          } catch (e) { /* 并发开花忽略 */ }
+        }
+      }
+    } catch (err) {
+      console.error('加载爱情树数据失败:', err);
+    }
+  },
+
+  /**
+   * 确保某条浇水记录存在（幂等）
+   * @param {string} coupleId - 空间ID
+   * @param {string} uid - 用户ID
+   * @param {string} date - 日期 YYYY-MM-DD
+   * @param {string} source - 来源 mood/diary/lovenote
+   */
+  async ensureWaterRecord(coupleId, uid, date, source) {
+    var db = app.getDb();
+    try {
+      var existRes = await db.collection('watering_records').where({
+        coupleId: coupleId, uid: uid, date: date, source: source
+      }).get();
+      if (existRes.data.length === 0) {
+        await db.collection('watering_records').add({
+          data: { coupleId: coupleId, uid: uid, date: date, source: source, createdAt: new Date().toISOString() }
+        });
+      }
+    } catch (e) { /* 忽略重复插入 */ }
+  },
+
+  /**
+   * 打开爱情树详情弹窗
+   */
+  async showTreeDetailPopup() {
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    var myUid = app.getUserId();
+    var partnerUid = app.globalData.partnerInfo
+      ? (app.globalData.partnerInfo.openid || app.globalData.partnerInfo.uid)
+      : '';
+
+    // 加载近7天浇水记录
+    try {
+      var dates = [];
+      for (var i = 6; i >= 0; i--) {
+        var d = new Date();
+        d.setDate(d.getDate() - i);
+        dates.push(util.formatDate(d));
+      }
+
+      var waterRes = await db.collection('watering_records').where({
+        coupleId: coupleId, date: db.command.in(dates)
+      }).get();
+
+      var records = waterRes.data.filter(function (r) { return r.source !== 'bloom'; });
+      var list = dates.map(function (date) {
+        var dayRecords = records.filter(function (r) { return r.date === date; });
+        var mySources = [];
+        var partnerSources = [];
+        dayRecords.forEach(function (r) {
+          if (r.uid === myUid) mySources.push(r.source);
+          if (partnerUid && r.uid === partnerUid) partnerSources.push(r.source);
+        });
+        var sourceLabel = { mood: '心情', diary: '日记', lovenote: '悄悄话' };
+        return {
+          date: date,
+          dateLabel: util.formatRelativeDate(date),
+          myWatered: mySources.length > 0,
+          partnerWatered: partnerSources.length > 0,
+          myDetail: mySources.map(function (s) { return sourceLabel[s] || s; }).join('、') || '未浇水',
+          partnerDetail: partnerSources.map(function (s) { return sourceLabel[s] || s; }).join('、') || '未浇水',
+          bothWatered: mySources.length > 0 && partnerSources.length > 0,
+        };
+      });
+
+      this.setData({ showTreeDetail: true, treeWateringList: list });
+    } catch (e) {
+      console.error('加载浇水记录失败:', e);
+      this.setData({ showTreeDetail: true, treeWateringList: [] });
+    }
+  },
+
+  /**
+   * 关闭爱情树详情弹窗
+   */
+  closeTreeDetail() {
+    this.setData({ showTreeDetail: false });
+  },
+
+  /**
+   * 跳转到扭蛋页
+   */
+  goGacha() {
+    wx.navigateTo({ url: '/pages/gacha/gacha' });
+  },
+
   noop() {},
 
   onShareAppMessage() {

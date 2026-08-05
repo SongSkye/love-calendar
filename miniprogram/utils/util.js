@@ -481,6 +481,134 @@ function getTodayAnniversary(anniversaryList) {
   return null;
 }
 
+/**
+ * 爱情树 - 根据累计开花数计算成长阶段
+ * @param {number} totalFlowers - 累计开花数
+ * @returns {object} { stage, emoji, label, nextStageFlowers }
+ */
+function getTreeStage(totalFlowers) {
+  totalFlowers = totalFlowers || 0;
+  if (totalFlowers === 0)          return { stage: 0, emoji: '🌱', label: '种子', nextStageFlowers: 1 };
+  if (totalFlowers <= 3)           return { stage: 1, emoji: '🌿', label: '发芽', nextStageFlowers: 4 };
+  if (totalFlowers <= 10)          return { stage: 2, emoji: '🪴', label: '幼苗', nextStageFlowers: 11 };
+  if (totalFlowers <= 30)          return { stage: 3, emoji: '🌳', label: '小树', nextStageFlowers: 31 };
+  if (totalFlowers <= 60)          return { stage: 4, emoji: '🌸', label: '开花树', nextStageFlowers: 61 };
+  return { stage: 5, emoji: '🍎', label: '结果树', nextStageFlowers: null };
+}
+
+/**
+ * 爱情树 - 计算阶段进度百分比
+ * @param {number} totalFlowers - 累计开花数
+ * @returns {number} 0-100
+ */
+function getTreeProgress(totalFlowers) {
+  totalFlowers = totalFlowers || 0;
+  var stage = getTreeStage(totalFlowers);
+  if (stage.nextStageFlowers === null) return 100;
+  var ranges = [0, 1, 4, 11, 31, 61];
+  var currentMin = ranges[stage.stage];
+  var currentMax = ranges[stage.stage + 1];
+  var progress = ((totalFlowers - currentMin) / (currentMax - currentMin)) * 100;
+  return Math.min(100, Math.max(0, Math.round(progress)));
+}
+
+// ===== 扭蛋卡片定义 =====
+
+/**
+ * 所有扭蛋卡片数据（4 套系 × 6 张 = 24 张）
+ */
+var GACHA_CARDS = [
+  // 套系1：甜蜜任务
+  { cardId: 'card_001', title: '给对方发一张自拍', description: '拍一张此刻的自拍发给TA，让TA看到现在的你', rarity: 1, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '📸', color: '#FFB3BF' },
+  { cardId: 'card_002', title: '分享一首正在听的歌', description: '把耳机里的歌分享给TA，让音乐连接彼此', rarity: 1, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '🎵', color: '#FFB3BF' },
+  { cardId: 'card_003', title: '语音说一句"我想你"', description: '用声音传递思念，比文字更温暖', rarity: 2, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '🎤', color: '#B3D4FF' },
+  { cardId: 'card_004', title: '告诉TA今天最想TA的瞬间', description: '分享你一天中那个突然想起TA的时刻', rarity: 2, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '💭', color: '#B3D4FF' },
+  { cardId: 'card_005', title: '同步看一部电影', description: '选一部电影，同时按下播放键，边看边聊', rarity: 3, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '🎬', color: '#D4B3FF' },
+  { cardId: 'card_006', title: '视频通话30分钟', description: '放下手头的事，好好看看TA，聊聊天', rarity: 4, setId: 'set_sweet_tasks', setName: '甜蜜任务', emoji: '📞', color: '#FFD700' },
+
+  // 套系2：真心话
+  { cardId: 'card_007', title: 'TA最让你心动的瞬间', description: '回忆并告诉TA，哪个瞬间让你确定就是TA了', rarity: 1, setId: 'set_truth', setName: '真心话', emoji: '💗', color: '#FFB3BF' },
+  { cardId: 'card_008', title: '分享今天发生的一件小事', description: '再小的事也值得分享，因为TA想了解你的一切', rarity: 1, setId: 'set_truth', setName: '真心话', emoji: '📝', color: '#FFB3BF' },
+  { cardId: 'card_009', title: '你最喜欢TA的哪个特点', description: '认真地告诉TA，你最喜欢TA身上什么', rarity: 2, setId: 'set_truth', setName: '真心话', emoji: '💝', color: '#B3D4FF' },
+  { cardId: 'card_010', title: '说说你最近的一个小愿望', description: '分享你的愿望，说不定TA会帮你实现呢', rarity: 2, setId: 'set_truth', setName: '真心话', emoji: '⭐', color: '#B3D4FF' },
+  { cardId: 'card_011', title: '分享一个秘密回忆', description: '只有你们两个人知道的专属回忆，重温一下', rarity: 3, setId: 'set_truth', setName: '真心话', emoji: '🔒', color: '#D4B3FF' },
+  { cardId: 'card_012', title: '写一封小情书', description: '用心写一段话给TA，不需要很长，但要认真', rarity: 4, setId: 'set_truth', setName: '真心话', emoji: '✉️', color: '#FFD700' },
+
+  // 套系3：惊喜时刻
+  { cardId: 'card_013', title: '给对方点一杯奶茶', description: '远程点一杯TA喜欢的奶茶，附上暖心备注', rarity: 1, setId: 'set_surprise', setName: '惊喜时刻', emoji: '🧋', color: '#FFB3BF' },
+  { cardId: 'card_014', title: '发一张搞笑表情包', description: '找一个能让TA笑出来的表情包发过去', rarity: 1, setId: 'set_surprise', setName: '惊喜时刻', emoji: '😂', color: '#FFB3BF' },
+  { cardId: 'card_015', title: '用TA的名字唱一句歌', description: '随便哼一句，把TA的名字编进去，好不好听不重要', rarity: 2, setId: 'set_surprise', setName: '惊喜时刻', emoji: '🎶', color: '#B3D4FF' },
+  { cardId: 'card_016', title: '画一张简笔画发给TA', description: '不用画得好，心意最重要！画个小人、小动物都行', rarity: 2, setId: 'set_surprise', setName: '惊喜时刻', emoji: '✏️', color: '#B3D4FF' },
+  { cardId: 'card_017', title: '给对方点一份外卖', description: '给TA一个惊喜，帮TA解决一顿饭', rarity: 3, setId: 'set_surprise', setName: '惊喜时刻', emoji: '🍕', color: '#D4B3FF' },
+  { cardId: 'card_018', title: '录一段哄睡语音', description: '录一段温柔的话，让TA听着你的声音入睡', rarity: 4, setId: 'set_surprise', setName: '惊喜时刻', emoji: '🌙', color: '#FFD700' },
+
+  // 套系4：未来约定
+  { cardId: 'card_019', title: '下次见面最想做的事', description: '告诉TA，下次见面你最想和TA一起做什么', rarity: 1, setId: 'set_future', setName: '未来约定', emoji: '🤗', color: '#FFB3BF' },
+  { cardId: 'card_020', title: '一起规划一次旅行', description: '找一个都想去的地方，一起做攻略', rarity: 1, setId: 'set_future', setName: '未来约定', emoji: '✈️', color: '#FFB3BF' },
+  { cardId: 'card_021', title: '约定一个专属暗号', description: '创造一个只有你们懂的暗号，以后聊天用', rarity: 2, setId: 'set_future', setName: '未来约定', emoji: '🤫', color: '#B3D4FF' },
+  { cardId: 'card_022', title: '一起存钱买一样东西', description: '设定一个共同目标，一起为它努力', rarity: 2, setId: 'set_future', setName: '未来约定', emoji: '💰', color: '#B3D4FF' },
+  { cardId: 'card_023', title: '写给一年后的TA', description: '写下你想对一年后的TA说的话，明年今日再看', rarity: 3, setId: 'set_future', setName: '未来约定', emoji: '✍️', color: '#D4B3FF' },
+  { cardId: 'card_024', title: '一起在线看日出/日落', description: '打开视频，一起看一次日出或日落，哪怕隔着屏幕', rarity: 4, setId: 'set_future', setName: '未来约定', emoji: '🌅', color: '#FFD700' },
+];
+
+/**
+ * 获取所有卡片定义
+ * @returns {Array} 卡片数组
+ */
+function getGachaCards() {
+  return GACHA_CARDS;
+}
+
+/**
+ * 获取卡片套系列表
+ * @returns {Array} [{ setId, setName, emoji, color }]
+ */
+function getGachaSets() {
+  var sets = [];
+  var seen = {};
+  GACHA_CARDS.forEach(function (card) {
+    if (!seen[card.setId]) {
+      seen[card.setId] = true;
+      sets.push({ setId: card.setId, setName: card.setName, emoji: card.emoji, color: card.color });
+    }
+  });
+  return sets;
+}
+
+/**
+ * 扭蛋抽卡 - 根据稀有度权重随机抽取
+ * 稀有度：1=普通(55%), 2=稀有(25%), 3=史诗(15%), 4=传说(5%)
+ * @returns {object} 抽到的卡片对象
+ */
+function drawGachaCard() {
+  var rand = Math.random() * 100;
+  var rarity;
+  if (rand < 5)      rarity = 4;   // 传说 5%
+  else if (rand < 20) rarity = 3;  // 史诗 15%
+  else if (rand < 45) rarity = 2;  // 稀有 25%
+  else                rarity = 1;  // 普通 55%
+
+  // 从该稀有度中随机选一张
+  var pool = GACHA_CARDS.filter(function (c) { return c.rarity === rarity; });
+  var idx = Math.floor(Math.random() * pool.length);
+  return pool[idx];
+}
+
+/**
+ * 获取稀有度配置
+ * @param {number} rarity - 稀有度 1-4
+ * @returns {object} { label, color, glowColor }
+ */
+function getRarityConfig(rarity) {
+  var configs = {
+    1: { label: '普通', color: '#B0B0B0', glowColor: 'rgba(176,176,176,0.3)' },
+    2: { label: '稀有', color: '#4A90D9', glowColor: 'rgba(74,144,217,0.4)' },
+    3: { label: '史诗', color: '#9B59B6', glowColor: 'rgba(155,89,182,0.5)' },
+    4: { label: '传说', color: '#FFD700', glowColor: 'rgba(255,215,0,0.6)' },
+  };
+  return configs[rarity] || configs[1];
+}
+
 module.exports = {
   formatDate,
   getToday,
@@ -500,4 +628,10 @@ module.exports = {
   buildAnniversaryDateMap,
   getTodayAnniversary,
   MOOD_MAP,
+  getTreeStage,
+  getTreeProgress,
+  getGachaCards,
+  getGachaSets,
+  drawGachaCard,
+  getRarityConfig,
 };

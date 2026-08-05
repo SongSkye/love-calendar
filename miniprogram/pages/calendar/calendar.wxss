@@ -807,3 +807,285 @@
   font-size: 26rpx;
   color: #CCCCCC;
 }
+
+/* ===== 爱情树卡片 ===== */
+.love-tree-card {
+  background: #FFFFFF;
+  border-radius: 24rpx;
+  padding: 24rpx;
+  margin-bottom: 20rpx;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 4rpx 20rpx rgba(255, 107, 129, 0.08);
+}
+
+.tree-main {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 20rpx;
+}
+
+.tree-visual {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.tree-big-emoji {
+  font-size: 64rpx;
+  transition: all 0.5s ease;
+}
+
+.tree-stage-text {
+  font-size: 20rpx;
+  color: #FF6B81;
+  margin-top: 4rpx;
+  font-weight: bold;
+}
+
+.tree-progress-wrap {
+  flex: 1;
+  height: 12rpx;
+  background: #F5F5F5;
+  border-radius: 6rpx;
+  overflow: hidden;
+}
+
+.tree-progress-bar {
+  height: 100%;
+  border-radius: 6rpx;
+  background: linear-gradient(90deg, #A8E6A1, #4CAF50, #2E7D32);
+  transition: width 0.5s ease;
+}
+
+.tree-water-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8rpx;
+  flex-shrink: 0;
+}
+
+.water-drops-row {
+  display: flex;
+  gap: 16rpx;
+}
+
+.water-drop-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  opacity: 0.3;
+  transition: opacity 0.3s;
+}
+
+.water-drop-wrap.active {
+  opacity: 1;
+}
+
+.water-drop-icon {
+  font-size: 28rpx;
+}
+
+.water-drop-label {
+  font-size: 18rpx;
+  color: #999999;
+  margin-top: 2rpx;
+}
+
+.flower-count-wrap {
+  display: flex;
+  align-items: center;
+}
+
+.flower-count {
+  font-size: 22rpx;
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+.tree-gacha-entry {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 12rpx 16rpx;
+  margin-left: 16rpx;
+  background: linear-gradient(135deg, #FFF5F6, #FFE4E8);
+  border-radius: 16rpx;
+  border: 2rpx dashed #FF6B81;
+  flex-shrink: 0;
+}
+
+.gacha-icon {
+  font-size: 36rpx;
+}
+
+.gacha-text {
+  font-size: 20rpx;
+  color: #FF6B81;
+  margin-top: 4rpx;
+  font-weight: bold;
+}
+
+/* ===== 爱情树详情弹窗 ===== */
+.tree-detail-popup {
+  background: #FFFFFF;
+  border-radius: 32rpx 32rpx 0 0;
+  width: 100%;
+  max-height: 85vh;
+  overflow-y: auto;
+  padding: 30rpx;
+  box-sizing: border-box;
+}
+
+.tree-detail-stage {
+  display: flex;
+  align-items: center;
+  gap: 24rpx;
+  padding: 24rpx;
+  background: linear-gradient(135deg, #F0FFF0, #E8F5E9);
+  border-radius: 20rpx;
+  margin-bottom: 24rpx;
+}
+
+.tree-detail-big {
+  font-size: 80rpx;
+}
+
+.tree-detail-info {
+  display: flex;
+  flex-direction: column;
+  gap: 8rpx;
+}
+
+.tree-detail-stage-label {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+}
+
+.tree-detail-flowers {
+  font-size: 26rpx;
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+.tree-detail-progress-wrap {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  margin-bottom: 24rpx;
+}
+
+.tree-detail-progress-label {
+  font-size: 24rpx;
+  color: #666666;
+  flex-shrink: 0;
+}
+
+.tree-detail-progress {
+  flex: 1;
+  height: 16rpx;
+  background: #F5F5F5;
+  border-radius: 8rpx;
+  overflow: hidden;
+}
+
+.tree-detail-progress-bar {
+  height: 100%;
+  border-radius: 8rpx;
+  background: linear-gradient(90deg, #A8E6A1, #4CAF50, #2E7D32);
+  transition: width 0.5s ease;
+}
+
+.tree-detail-progress-text {
+  font-size: 24rpx;
+  color: #4CAF50;
+  font-weight: bold;
+  flex-shrink: 0;
+}
+
+.tree-detail-divider {
+  height: 1rpx;
+  background: #F0F0F0;
+  margin-bottom: 24rpx;
+}
+
+.tree-detail-subtitle {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.tree-watering-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16rpx;
+}
+
+.tree-watering-item {
+  display: flex;
+  align-items: center;
+  padding: 16rpx;
+  background: #FFF5F6;
+  border-radius: 12rpx;
+  gap: 16rpx;
+}
+
+.tree-watering-date {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  flex-shrink: 0;
+  width: 80rpx;
+}
+
+.tree-watering-date-text {
+  font-size: 24rpx;
+  color: #333333;
+  font-weight: bold;
+}
+
+.tree-watering-date-detail {
+  font-size: 18rpx;
+  color: #999999;
+}
+
+.tree-watering-users {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 6rpx;
+}
+
+.tree-watering-user {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+}
+
+.tree-watering-check {
+  font-size: 22rpx;
+  flex-shrink: 0;
+}
+
+.tree-watering-detail {
+  font-size: 22rpx;
+  color: #666666;
+}
+
+.tree-watering-flower {
+  font-size: 28rpx;
+  flex-shrink: 0;
+}
+
+.tree-detail-empty {
+  text-align: center;
+  padding: 40rpx 0;
+  font-size: 26rpx;
+  color: #CCCCCC;
+}

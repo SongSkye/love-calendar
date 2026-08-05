@@ -1,0 +1,431 @@
+/* 扭蛋机页面样式 */
+.gacha-page {
+  padding: 20rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #FFF5F6;
+}
+
+/* ===== 顶部标题 ===== */
+.gacha-header {
+  text-align: center;
+  padding: 40rpx 0 20rpx;
+}
+
+.gacha-title {
+  font-size: 40rpx;
+  font-weight: bold;
+  color: #FF6B81;
+  display: block;
+}
+
+.gacha-subtitle {
+  font-size: 24rpx;
+  color: #999999;
+  margin-top: 8rpx;
+  display: block;
+}
+
+/* ===== 次数显示 ===== */
+.gacha-count-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.gacha-count {
+  display: flex;
+  align-items: baseline;
+  gap: 8rpx;
+  background: #FFFFFF;
+  border-radius: 40rpx;
+  padding: 12rpx 32rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 129, 0.1);
+}
+
+.gacha-count-label {
+  font-size: 24rpx;
+  color: #999999;
+}
+
+.gacha-count-num {
+  font-size: 48rpx;
+  font-weight: bold;
+  color: #999999;
+}
+
+.gacha-count-num.active {
+  color: #FF6B81;
+}
+
+.gacha-count-tip {
+  margin-top: 12rpx;
+  font-size: 22rpx;
+  color: #CCCCCC;
+  text-align: center;
+}
+
+/* ===== 扭蛋机 ===== */
+.gacha-machine-area {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-bottom: 30rpx;
+}
+
+.gacha-machine {
+  width: 500rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  position: relative;
+  transition: transform 0.1s;
+}
+
+/* 震动动画 */
+.gacha-machine.shaking {
+  animation: machineShake 0.1s infinite;
+}
+
+@keyframes machineShake {
+  0%, 100% { transform: translateX(0) rotate(0deg); }
+  25% { transform: translateX(-8rpx) rotate(-3deg); }
+  75% { transform: translateX(8rpx) rotate(3deg); }
+}
+
+/* 顶部圆顶 */
+.machine-top {
+  position: relative;
+  z-index: 2;
+}
+
+.machine-dome {
+  width: 200rpx;
+  height: 120rpx;
+  background: linear-gradient(180deg, #FF8E9E 0%, #FF6B81 50%, #E85D75 100%);
+  border-radius: 100rpx 100rpx 0 0;
+  border: 6rpx solid #E85D75;
+  border-bottom: none;
+  position: relative;
+}
+
+.machine-dome::after {
+  content: '🎀';
+  position: absolute;
+  top: 8rpx;
+  left: 50%;
+  transform: translateX(-50%);
+  font-size: 36rpx;
+}
+
+/* 蛋仓 */
+.machine-body {
+  width: 360rpx;
+  padding: 16rpx;
+  background: #FF6B81;
+  border: 6rpx solid #E85D75;
+  border-top: none;
+  border-bottom: none;
+  position: relative;
+  z-index: 1;
+}
+
+.machine-glass {
+  width: 100%;
+  min-height: 160rpx;
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 16rpx;
+  padding: 16rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 2rpx solid rgba(255, 255, 255, 0.3);
+}
+
+.gacha-eggs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+  justify-content: center;
+}
+
+.egg {
+  font-size: 36rpx;
+  animation: eggFloat 2s ease-in-out infinite;
+  animation-delay: calc(var(--i, 0) * 0.3s);
+}
+
+.egg:nth-child(1) { --i: 0; }
+.egg:nth-child(2) { --i: 1; }
+.egg:nth-child(3) { --i: 2; }
+.egg:nth-child(4) { --i: 3; }
+.egg:nth-child(5) { --i: 4; }
+
+@keyframes eggFloat {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6rpx); }
+}
+
+/* 出口 */
+.machine-outlet {
+  position: relative;
+  z-index: 0;
+}
+
+.outlet-hole {
+  width: 100rpx;
+  height: 60rpx;
+  background: #333333;
+  border-radius: 0 0 50rpx 50rpx;
+  border: 6rpx solid #E85D75;
+  border-top: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+}
+
+.falling-egg {
+  font-size: 40rpx;
+  position: absolute;
+  top: -40rpx;
+  opacity: 0;
+  transition: all 0.3s;
+}
+
+.falling-egg.fall {
+  animation: eggFall 0.5s ease-out forwards;
+}
+
+@keyframes eggFall {
+  0% { top: -40rpx; opacity: 0; transform: scale(0.5); }
+  50% { opacity: 1; }
+  100% { top: 20rpx; opacity: 1; transform: scale(1); }
+}
+
+/* 底座 */
+.machine-base {
+  width: 400rpx;
+  padding: 20rpx 0;
+  background: linear-gradient(180deg, #E85D75, #D44A62);
+  border-radius: 0 0 40rpx 40rpx;
+  border: 6rpx solid #E85D75;
+  border-top: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.machine-label {
+  font-size: 24rpx;
+  color: rgba(255, 255, 255, 0.8);
+  font-weight: bold;
+  letter-spacing: 8rpx;
+}
+
+/* 扭蛋按钮 */
+.pull-btn-wrap {
+  margin-top: 40rpx;
+}
+
+.pull-btn {
+  width: 360rpx;
+  height: 88rpx;
+  background: linear-gradient(135deg, #FFB3BF, #FF6B81);
+  color: #FFFFFF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pull-btn.ready {
+  animation: btnPulse 2s ease-in-out infinite;
+}
+
+.pull-btn.disabled {
+  background: #CCCCCC;
+  box-shadow: none;
+  color: #FFFFFF;
+  animation: none;
+}
+
+@keyframes btnPulse {
+  0%, 100% { box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3); }
+  50% { box-shadow: 0 8rpx 40rpx rgba(255, 107, 129, 0.5); transform: scale(1.02); }
+}
+
+/* ===== 今日记录 ===== */
+.today-records {
+  margin-bottom: 30rpx;
+}
+
+.section-title {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333333;
+  display: block;
+  margin-bottom: 16rpx;
+}
+
+.records-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12rpx;
+}
+
+.record-item {
+  width: calc(50% - 6rpx);
+}
+
+.record-card {
+  background: #FFFFFF;
+  border-radius: 16rpx;
+  padding: 20rpx;
+  border-left: 6rpx solid;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+  box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
+}
+
+.record-emoji {
+  font-size: 36rpx;
+  flex-shrink: 0;
+}
+
+.record-title {
+  font-size: 24rpx;
+  color: #333333;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== 底部导航 ===== */
+.gacha-bottom-nav {
+  display: flex;
+  justify-content: center;
+  padding: 20rpx 0;
+}
+
+.nav-btn {
+  display: flex;
+  align-items: center;
+  gap: 8rpx;
+  background: #FFFFFF;
+  border-radius: 40rpx;
+  padding: 16rpx 40rpx;
+  box-shadow: 0 4rpx 16rpx rgba(255, 107, 129, 0.1);
+}
+
+.nav-icon {
+  font-size: 32rpx;
+}
+
+.nav-text {
+  font-size: 28rpx;
+  color: #FF6B81;
+  font-weight: bold;
+}
+
+/* ===== 结果弹窗 ===== */
+.result-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: 2000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: maskFadeIn 0.3s ease;
+}
+
+@keyframes maskFadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.result-popup {
+  background: #FFFFFF;
+  border-radius: 32rpx;
+  padding: 40rpx;
+  width: 560rpx;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  border: 3rpx solid;
+  animation: cardReveal 0.5s ease-out;
+}
+
+@keyframes cardReveal {
+  0% { transform: scale(0.3) rotateY(180deg); opacity: 0; }
+  50% { transform: scale(1.05) rotateY(90deg); opacity: 0.8; }
+  100% { transform: scale(1) rotateY(0deg); opacity: 1; }
+}
+
+.result-rarity {
+  padding: 8rpx 24rpx;
+  border-radius: 20rpx;
+  margin-bottom: 20rpx;
+}
+
+.rarity-text {
+  font-size: 24rpx;
+  color: #FFFFFF;
+  font-weight: bold;
+}
+
+.result-emoji {
+  font-size: 100rpx;
+  margin-bottom: 16rpx;
+}
+
+.result-title {
+  font-size: 36rpx;
+  font-weight: bold;
+  color: #333333;
+  margin-bottom: 12rpx;
+  text-align: center;
+}
+
+.result-desc {
+  font-size: 26rpx;
+  color: #666666;
+  text-align: center;
+  line-height: 1.6;
+  margin-bottom: 16rpx;
+}
+
+.result-set {
+  font-size: 24rpx;
+  color: #999999;
+  margin-bottom: 30rpx;
+}
+
+.result-actions {
+  width: 100%;
+}
+
+.result-btn {
+  text-align: center;
+  padding: 20rpx;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  font-weight: bold;
+}
+
+.result-btn.primary {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFFFFF;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
+}

@@ -27,24 +27,6 @@
     </view>
   </view>
 
-  <!-- 婚礼倒计时卡片 -->
-  <view class="wedding-countdown-card {{weddingCountdown.isPast ? 'wedding-past' : ''}} {{weddingCountdown.isToday ? 'wedding-today' : ''}}" wx:if="{{weddingCountdown}}">
-    <view class="wedding-bg-decor"></view>
-    <view class="wedding-left">
-      <text class="wedding-icon">{{weddingCountdown.isPast ? '💍' : (weddingCountdown.isToday ? '🎉' : '💒')}}</text>
-      <view class="wedding-info">
-        <text class="wedding-label" wx:if="{{weddingCountdown.isPast}}">「{{weddingCountdown.title}}」已过去</text>
-        <text class="wedding-label" wx:elif="{{weddingCountdown.isToday}}">🎉 今天就是「{{weddingCountdown.title}}」！</text>
-        <text class="wedding-label" wx:else>距「{{weddingCountdown.title}}」还有</text>
-        <text class="wedding-date">{{weddingCountdown.date}}</text>
-      </view>
-    </view>
-    <view class="wedding-right">
-      <text class="wedding-days">{{weddingCountdown.isPast ? weddingCountdown.totalDays : (weddingCountdown.isToday ? '🎉' : weddingCountdown.countdownDays)}}</text>
-      <text class="wedding-unit">{{weddingCountdown.isPast ? '天' : (weddingCountdown.isToday ? '' : '天')}}</text>
-    </view>
-  </view>
-
   <!-- 悄悄话卡片 -->
   <view class="love-note-card" wx:if="{{loveNote}}" bindtap="openLoveNotePopup">
     <view class="love-note-header">
@@ -66,7 +48,37 @@
     <text class="love-note-label">给TA写一句悄悄话...</text>
   </view>
 
-  <!-- 月历 -->
+  <!-- 爱情树卡片 -->
+  <view class="love-tree-card">
+    <view class="tree-main" bindtap="showTreeDetailPopup">
+      <view class="tree-visual">
+        <text class="tree-big-emoji">{{treeEmoji}}</text>
+        <text class="tree-stage-text">{{treeStageLabel}}</text>
+      </view>
+      <view class="tree-progress-wrap">
+        <view class="tree-progress-bar" style="width: {{treeProgress}}%"></view>
+      </view>
+      <view class="tree-water-info">
+        <view class="water-drops-row">
+          <view class="water-drop-wrap {{myWatered ? 'active' : ''}}">
+            <text class="water-drop-icon">💧</text>
+            <text class="water-drop-label">我</text>
+          </view>
+          <view class="water-drop-wrap {{partnerWatered ? 'active' : ''}}">
+            <text class="water-drop-icon">💧</text>
+            <text class="water-drop-label">TA</text>
+          </view>
+        </view>
+        <view class="flower-count-wrap">
+          <text class="flower-count">🌸 {{totalFlowers}}</text>
+        </view>
+      </view>
+    </view>
+    <view class="tree-gacha-entry" bindtap="goGacha">
+      <text class="gacha-icon">🎁</text>
+      <text class="gacha-text">扭蛋</text>
+    </view>
+  </view>
   <view class="calendar-container">
     <!-- 月份切换 -->
     <view class="month-header">
@@ -290,5 +302,53 @@
     <text class="celebration-title">今天是「{{todayAnniversary.title}}」</text>
     <text class="celebration-days">已经 {{todayAnniversary.totalDays}} 天啦 💕</text>
     <view class="celebration-btn" bindtap="closeCelebrationPopup">知道啦</view>
+  </view>
+</view>
+
+<!-- 爱情树详情弹窗 -->
+<view class="mood-popup-mask" wx:if="{{showTreeDetail}}" bindtap="closeTreeDetail">
+  <view class="tree-detail-popup" catchtap="noop">
+    <view class="popup-header">
+      <text class="popup-title">🌳 我们的爱情树</text>
+      <view class="popup-close" bindtap="closeTreeDetail">✕</view>
+    </view>
+    <view class="tree-detail-stage">
+      <text class="tree-detail-big">{{treeEmoji}}</text>
+      <view class="tree-detail-info">
+        <text class="tree-detail-stage-label">{{treeStageLabel}}</text>
+        <text class="tree-detail-flowers">🌸 已开花 {{totalFlowers}} 朵</text>
+      </view>
+    </view>
+    <view class="tree-detail-progress-wrap">
+      <text class="tree-detail-progress-label">成长进度</text>
+      <view class="tree-detail-progress">
+        <view class="tree-detail-progress-bar" style="width: {{treeProgress}}%"></view>
+      </view>
+      <text class="tree-detail-progress-text">{{treeProgress}}%</text>
+    </view>
+    <view class="tree-detail-divider"></view>
+    <text class="tree-detail-subtitle">近7天浇水记录</text>
+    <view class="tree-watering-list">
+      <view class="tree-watering-item" wx:for="{{treeWateringList}}" wx:key="date">
+        <view class="tree-watering-date">
+          <text class="tree-watering-date-text">{{item.dateLabel}}</text>
+          <text class="tree-watering-date-detail">{{item.date}}</text>
+        </view>
+        <view class="tree-watering-users">
+          <view class="tree-watering-user">
+            <text class="tree-watering-check {{item.myWatered ? 'done' : ''}}">{{item.myWatered ? '✅' : '⬜'}}</text>
+            <text class="tree-watering-detail">{{item.myDetail}}</text>
+          </view>
+          <view class="tree-watering-user">
+            <text class="tree-watering-check {{item.partnerWatered ? 'done' : ''}}">{{item.partnerWatered ? '✅' : '⬜'}}</text>
+            <text class="tree-watering-detail">{{item.partnerDetail}}</text>
+          </view>
+        </view>
+        <text class="tree-watering-flower" wx:if="{{item.bothWatered}}">🌸</text>
+      </view>
+    </view>
+    <view class="tree-detail-empty" wx:if="{{treeWateringList.length === 0}}">
+      <text>暂无浇水记录，开始今天的互动吧 💕</text>
+    </view>
   </view>
 </view>

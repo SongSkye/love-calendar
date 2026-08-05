@@ -1,0 +1,77 @@
+<!--
+  卡片图鉴页面 - 收集展示
+  按套系分组，展示收集进度
+-->
+<view class="collection-page">
+  <!-- 顶部统计 -->
+  <view class="collection-header">
+    <text class="collection-title">📖 卡片图鉴</text>
+    <view class="collection-progress">
+      <text class="progress-text">已收集 {{totalCollected}}/{{totalCards}}</text>
+      <view class="progress-bar-wrap">
+        <view class="progress-bar" style="width: {{totalCards > 0 ? (totalCollected / totalCards * 100) : 0}}%"></view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 套系切换 -->
+  <scroll-view class="set-tabs" scroll-x>
+    <view
+      class="set-tab {{activeSetId === item.setId ? 'active' : ''}}"
+      wx:for="{{sets}}"
+      wx:key="setId"
+      wx:for-item="item"
+      data-setid="{{item.setId}}"
+      bindtap="switchSet"
+    >
+      <text class="set-tab-name">{{item.setName}}</text>
+      <text class="set-tab-progress">{{item.progress}}</text>
+    </view>
+  </scroll-view>
+
+  <!-- 卡片列表 -->
+  <view class="cards-grid">
+    <view
+      class="card-item {{item.collected ? 'collected' : 'uncollected'}}"
+      wx:for="{{filterCards}}"
+      wx:key="cardId"
+      wx:for-item="item"
+    >
+      <!-- 已收集 -->
+      <block wx:if="{{item.collected}}">
+        <view class="card-inner" style="border-color: {{item.color}}; box-shadow: 0 4rpx 16rpx {{item.color}}33;">
+          <text class="card-emoji">{{item.emoji}}</text>
+          <text class="card-title">{{item.title}}</text>
+          <text class="card-desc">{{item.description}}</text>
+          <view class="card-rarity-tag" style="background: {{item.color}};">
+            <text>{{item.rarity === 4 ? '传说' : item.rarity === 3 ? '史诗' : item.rarity === 2 ? '稀有' : '普通'}}</text>
+          </view>
+        </view>
+      </block>
+
+      <!-- 未收集 -->
+      <block wx:else>
+        <view class="card-inner locked">
+          <text class="card-locked-icon">❓</text>
+          <text class="card-locked-label">???</text>
+          <view class="card-rarity-tag locked-tag">
+            <text>{{item.rarity === 4 ? '传说' : item.rarity === 3 ? '史诗' : item.rarity === 2 ? '稀有' : '普通'}}</text>
+          </view>
+        </view>
+      </block>
+    </view>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-collection" wx:if="{{filterCards.length === 0}}">
+    <text class="empty-icon">📭</text>
+    <text class="empty-text">暂无卡片数据</text>
+  </view>
+
+  <!-- 底部按钮 -->
+  <view class="collection-bottom">
+    <view class="go-gacha-btn" bindtap="goGacha">
+      <text>🎰 去扭蛋</text>
+    </view>
+  </view>
+</view>

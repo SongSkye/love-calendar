@@ -265,6 +265,13 @@ Page({
   },
 
   /**
+   * 跳转到卡片图鉴
+   */
+  goCollection() {
+    wx.navigateTo({ url: '/pages/gacha-collection/gacha-collection' });
+  },
+
+  /**
    * 解绑并退出空间
    * 同一微信号在所有设备上共享数据，解绑即删除此账号的全部数据
    */

@@ -1,0 +1,117 @@
+<!--
+  扭蛋机页面 - 每日抽卡互动
+  功能：扭蛋动画、抽卡展示、今日记录
+-->
+<view class="gacha-page">
+  <!-- 顶部标题 -->
+  <view class="gacha-header">
+    <text class="gacha-title">🎰 恋爱扭蛋机</text>
+    <text class="gacha-subtitle">每天抽一张卡片，给TA一个惊喜</text>
+  </view>
+
+  <!-- 次数显示 -->
+  <view class="gacha-count-wrap">
+    <view class="gacha-count">
+      <text class="gacha-count-label">今日剩余</text>
+      <text class="gacha-count-num {{freePulls > 0 ? 'active' : ''}}">{{freePulls}}/{{maxPulls}}</text>
+      <text class="gacha-count-label">次</text>
+    </view>
+    <view class="gacha-count-tip" wx:if="{{freePulls === 0}}">
+      <text>明天再来吧~ 记录心情或写日记可额外获得次数哦</text>
+    </view>
+  </view>
+
+  <!-- 扭蛋机区域 -->
+  <view class="gacha-machine-area">
+    <!-- 扭蛋机主体 -->
+    <view class="gacha-machine {{animationPhase === 'shaking' ? 'shaking' : ''}}">
+      <!-- 顶部装饰 -->
+      <view class="machine-top">
+        <view class="machine-dome"></view>
+      </view>
+      <!-- 蛋仓 -->
+      <view class="machine-body">
+        <view class="machine-glass">
+          <view class="gacha-eggs">
+            <text class="egg">🥚</text>
+            <text class="egg">🥚</text>
+            <text class="egg">🥚</text>
+            <text class="egg">🥚</text>
+            <text class="egg">🥚</text>
+          </view>
+        </view>
+      </view>
+      <!-- 出口 -->
+      <view class="machine-outlet">
+        <view class="outlet-hole">
+          <!-- 蛋掉落动画 -->
+          <text class="falling-egg {{animationPhase === 'opening' || animationPhase === 'reveal' ? 'fall' : ''}}">🥚</text>
+        </view>
+      </view>
+      <!-- 底座 -->
+      <view class="machine-base">
+        <text class="machine-label">LOVE GACHA</text>
+      </view>
+    </view>
+
+    <!-- 扭蛋按钮 -->
+    <view class="pull-btn-wrap">
+      <button
+        class="pull-btn {{freePulls > 0 && !pulling ? 'ready' : ''}} {{pulling ? 'disabled' : ''}}"
+        bindtap="startPull"
+        disabled="{{pulling || freePulls <= 0}}"
+      >
+        {{pulling ? '扭蛋中...' : (freePulls > 0 ? '✨ 开始扭蛋' : '今日已用完')}}
+      </button>
+    </view>
+  </view>
+
+  <!-- 今日已抽记录 -->
+  <view class="today-records" wx:if="{{todayRecords.length > 0}}">
+    <text class="section-title">📋 今日抽到</text>
+    <view class="records-list">
+      <view
+        class="record-item"
+        wx:for="{{todayRecords}}"
+        wx:key="_id"
+        wx:for-item="record"
+      >
+        <view class="record-card" style="border-color: {{record.cardColor}};">
+          <text class="record-emoji">{{record.cardEmoji}}</text>
+          <text class="record-title">{{record.cardTitle}}</text>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 底部导航 -->
+  <view class="gacha-bottom-nav">
+    <view class="nav-btn" bindtap="goCollection">
+      <text class="nav-icon">📖</text>
+      <text class="nav-text">卡片图鉴</text>
+    </view>
+  </view>
+</view>
+
+<!-- 抽卡结果弹窗 -->
+<view class="result-mask" wx:if="{{showResult}}" bindtap="closeResult">
+  <view class="result-popup" catchtap="noop" style="border-color: {{resultCard.color}}; box-shadow: 0 0 40rpx {{resultCard.color}}33;">
+    <!-- 稀有度标签 -->
+    <view class="result-rarity" style="background: {{resultCard.color}};">
+      <text class="rarity-text">{{resultCard.rarity === 4 ? '⭐ 传说' : resultCard.rarity === 3 ? '⭐ 史诗' : resultCard.rarity === 2 ? '⭐ 稀有' : '⭐ 普通'}}</text>
+    </view>
+
+    <!-- 卡片内容 -->
+    <text class="result-emoji">{{resultCard.emoji}}</text>
+    <text class="result-title">{{resultCard.title}}</text>
+    <text class="result-desc">{{resultCard.description}}</text>
+    <text class="result-set">📦 {{resultCard.setName}}</text>
+
+    <!-- 按钮 -->
+    <view class="result-actions">
+      <view class="result-btn primary" bindtap="closeResult">
+        <text>收下卡片</text>
+      </view>
+    </view>
+  </view>
+</view>

@@ -8,7 +8,9 @@
     "pages/anniversary-detail/anniversary-detail",
     "pages/anniversary-record/anniversary-record",
     "pages/mine/mine",
-    "pages/photos/photos"
+    "pages/photos/photos",
+    "pages/gacha/gacha",
+    "pages/gacha-collection/gacha-collection"
   ],
   "window": {
     "backgroundTextStyle": "light",
