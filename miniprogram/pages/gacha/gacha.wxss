@@ -303,6 +303,11 @@
   position: relative;
 }
 
+.record-card.partner-card {
+  background: #FFF5F6;
+  border-style: dashed;
+}
+
 .record-emoji {
   font-size: 56rpx;
 }

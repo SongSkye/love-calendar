@@ -51,13 +51,13 @@ Page({
     var coupleId = app.globalData.coupleId;
     var db = app.getDb();
 
-    // 查询双方收集的卡片
+    // 查询双方收集的卡片（两人所有记录一起查）
     var collectedCardIds = [];
     try {
-      var myRes = await db.collection('gacha_records').where({
-        coupleId: coupleId, uid: myUid
+      var allRes = await db.collection('gacha_records').where({
+        coupleId: coupleId
       }).get();
-      myRes.data.forEach(function (r) {
+      allRes.data.forEach(function (r) {
         if (collectedCardIds.indexOf(r.cardId) === -1) {
           collectedCardIds.push(r.cardId);
         }

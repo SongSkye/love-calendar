@@ -20,6 +20,8 @@ Page({
     // 今日已抽记录（已拼接好卡片信息）
     todayRecords: [],
     hasRecords: false,      // 是否有今日记录
+    partnerRecords: [],      // 对方今日抽到的卡片
+    hasPartnerRecords: false,
 
     // 弹窗
     showResult: false,      // 显示抽卡结果弹窗
@@ -51,26 +53,40 @@ Page({
   },
 
   /**
-   * 加载扭蛋数据：计算今日剩余次数、已抽记录
+   * 加载扭蛋数据：计算今日剩余次数、已抽记录，以及对方抽到的卡片
    */
   async loadData() {
     var db = app.getDb();
     var coupleId = app.globalData.coupleId;
     var myUid = app.getUserId();
+    var partnerUid = app.globalData.partnerInfo
+      ? (app.globalData.partnerInfo.openid || app.globalData.partnerInfo.uid)
+      : '';
     var today = util.getToday();
 
     try {
-      // 1. 查询今日已抽记录
-      var recordsRes = await db.collection('gacha_records').where({
-        coupleId: coupleId, uid: myUid, date: today
-      }).get();
-      var rawRecords = recordsRes.data;
-
-      // 2. 附加卡片信息（WXML 中无法调用方法，需提前处理）
+      // 卡片映射表
       var allCards = util.getGachaCards();
       var cardMap = {};
       allCards.forEach(function (c) { cardMap[c.cardId] = c; });
-      var todayRecords = rawRecords.map(function (r) {
+
+      // 查询今日所有记录（两人一起查，一次请求）
+      var recordsRes = await db.collection('gacha_records').where({
+        coupleId: coupleId, date: today
+      }).get();
+
+      var myRawRecords = [];
+      var partnerRawRecords = [];
+      recordsRes.data.forEach(function (r) {
+        if (r.uid === myUid) {
+          myRawRecords.push(r);
+        } else if (partnerUid && r.uid === partnerUid) {
+          partnerRawRecords.push(r);
+        }
+      });
+
+      // 拼接卡片信息
+      function buildCard(r) {
         var card = cardMap[r.cardId] || {};
         var rarityCfg = util.getRarityConfig(card.rarity || 1);
         return {
@@ -84,9 +100,12 @@ Page({
           rarityLabel: rarityCfg.label,
           cardSetName: card.setName || '',
         };
-      });
+      }
 
-      // 3. 计算剩余次数
+      var todayRecords = myRawRecords.map(buildCard);
+      var partnerRecords = partnerRawRecords.map(buildCard);
+
+      // 计算剩余次数
       var usedPulls = todayRecords.length;
 
       var bonusPulls = 0;
@@ -110,6 +129,8 @@ Page({
         maxPulls: totalPulls,
         todayRecords: todayRecords,
         hasRecords: todayRecords.length > 0,
+        partnerRecords: partnerRecords,
+        hasPartnerRecords: partnerRecords.length > 0,
       });
     } catch (err) {
       console.error('加载扭蛋数据失败:', err);

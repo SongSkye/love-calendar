@@ -66,7 +66,7 @@
       </view>
       <view class="menu-item" bindtap="goCollection">
         <text class="menu-icon">📖</text>
-        <text class="menu-text">卡片图鉴</text>
+        <text class="menu-text">我们的图鉴</text>
         <text class="menu-arrow">›</text>
       </view>
       <view class="menu-item" bindtap="aboutApp">

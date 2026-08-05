@@ -5,7 +5,7 @@
 <view class="collection-page">
   <!-- 顶部统计 -->
   <view class="collection-header">
-    <text class="collection-title">📖 卡片图鉴</text>
+    <text class="collection-title">📖 我们的图鉴</text>
     <view class="collection-progress">
       <text class="progress-text">已收集 {{totalCollected}}/{{totalCards}}</text>
       <view class="progress-bar-wrap">

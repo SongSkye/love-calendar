@@ -44,6 +44,29 @@
     </scroll-view>
   </view>
 
+  <!-- 对方今日抽到的卡片 -->
+  <view class="today-records partner-records" wx:if="{{hasPartnerRecords}}">
+    <text class="section-title">💝 TA 今天抽到（{{partnerRecords.length}}张）</text>
+    <scroll-view class="records-scroll" scroll-x>
+      <view class="records-list">
+        <view
+          class="record-item"
+          wx:for="{{partnerRecords}}"
+          wx:key="_id"
+          wx:for-item="record"
+        >
+          <view class="record-card partner-card" style="border-color: {{record.cardColor}}; box-shadow: 0 4rpx 16rpx {{record.cardColor}}33;">
+            <text class="record-emoji">{{record.cardEmoji}}</text>
+            <text class="record-title">{{record.cardTitle}}</text>
+            <view class="record-rarity-tag" style="background: {{record.cardColor}};">
+              <text>{{record.rarityLabel}}</text>
+            </view>
+          </view>
+        </view>
+      </view>
+    </scroll-view>
+  </view>
+
   <!-- 扭蛋机区域 -->
   <view class="gacha-machine-area">
     <!-- 扭蛋机主体 -->
@@ -92,7 +115,7 @@
   <view class="gacha-bottom-nav">
     <view class="nav-btn" bindtap="goCollection">
       <text class="nav-icon">📖</text>
-      <text class="nav-text">卡片图鉴</text>
+      <text class="nav-text">我们的图鉴</text>
     </view>
   </view>
 </view>
