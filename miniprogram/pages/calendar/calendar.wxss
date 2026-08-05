@@ -77,6 +77,26 @@
   100% { box-shadow: 0 8rpx 50rpx rgba(255, 215, 0, 0.6); }
 }
 
+/* ===== 最后3天倒计时特效 ===== */
+.header-card.anniversary-urgent {
+  animation: urgentPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes urgentPulse {
+  0% { box-shadow: 0 8rpx 30rpx rgba(255, 107, 129, 0.25); }
+  100% { box-shadow: 0 8rpx 50rpx rgba(255, 107, 129, 0.6); }
+}
+
+.header-card.anniversary-urgent .next-countdown {
+  color: #FFD700;
+  animation: urgentText 1s ease-in-out infinite alternate;
+}
+
+@keyframes urgentText {
+  0% { transform: scale(1); }
+  100% { transform: scale(1.1); }
+}
+
 .anniversary-today-label {
   font-size: 22rpx;
   margin-top: 6rpx;

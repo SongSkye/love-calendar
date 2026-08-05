@@ -306,12 +306,18 @@ Page({
     const upcoming = enriched.filter(function (item) { return item.countdownDays > 0; })
       .sort(function (a, b) { return a.countdownDays - b.countdownDays; });
     if (upcoming.length > 0) {
+      var next = upcoming[0];
+      // 最后3天倒计时标记（用于特殊效果）
+      var isUrgent = next.countdownDays <= 3;
       this.setData({
         nextAnniversary: {
-          title: upcoming[0].title,
-          countdownDays: upcoming[0].countdownDays,
+          title: next.title,
+          countdownDays: next.countdownDays,
+          isUrgent: isUrgent,
         }
       });
+    } else {
+      this.setData({ nextAnniversary: null });
     }
 
     // 婚礼倒计时：找到 type=wedding 的纪念日
