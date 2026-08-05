@@ -5,7 +5,7 @@
   <!-- 头部个人信息 -->
   <view class="mine-header">
     <view class="mine-avatar-wrap" bindtap="changeAvatar">
-      <image wx:if="{{userInfo.avatar}}" src="{{userInfo.avatar}}" mode="aspectFill" class="mine-avatar-img"></image>
+      <image wx:if="{{userInfo.avatar}}" src="{{userInfo.avatar}}" mode="aspectFill" class="mine-avatar-img" binderror="onAvatarError"></image>
       <view wx:else class="mine-avatar-default">💕</view>
       <view class="avatar-edit-icon">📷</view>
     </view>
@@ -22,7 +22,7 @@
   <view class="section">
     <view class="section-title">💑 我的TA</view>
     <view class="partner-card card" wx:if="{{partnerInfo}}">
-      <image wx:if="{{partnerInfo.avatar}}" src="{{partnerInfo.avatar}}" mode="aspectFill" class="partner-avatar-img"></image>
+      <image wx:if="{{partnerInfo.avatar}}" src="{{partnerInfo.avatar}}" mode="aspectFill" class="partner-avatar-img" binderror="onPartnerAvatarError"></image>
       <view wx:else class="partner-avatar-default">💝</view>
       <view class="partner-info">
         <view class="partner-name">{{partnerInfo.nickname}}</view>

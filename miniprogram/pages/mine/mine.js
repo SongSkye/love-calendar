@@ -88,16 +88,51 @@ Page({
       var update = {};
       var userAvatar = that.data.userInfo.avatar;
       var partnerAvatar = that.data.partnerInfo && that.data.partnerInfo.avatar;
-      if (userAvatar && urlMap[userAvatar]) {
-        update.userInfo = Object.assign({}, that.data.userInfo, { avatar: urlMap[userAvatar] });
+
+      // 用户头像转换：如果 urlMap 中有则用，没有则保留原 cloud:// fileID（image 组件可直接渲染）
+      if (userAvatar) {
+        var newUserAvatar = urlMap[userAvatar] || userAvatar;
+        update.userInfo = Object.assign({}, that.data.userInfo, { avatar: newUserAvatar });
       }
-      if (partnerAvatar && urlMap[partnerAvatar]) {
-        update.partnerInfo = Object.assign({}, that.data.partnerInfo, { avatar: urlMap[partnerAvatar] });
+
+      // 对方头像转换
+      if (partnerAvatar) {
+        var newPartnerAvatar = urlMap[partnerAvatar] || partnerAvatar;
+        update.partnerInfo = Object.assign({}, that.data.partnerInfo, { avatar: newPartnerAvatar });
       }
+
       if (Object.keys(update).length > 0) {
         that.setData(update);
       }
+    }).catch(function (err) {
+      console.warn('convertAvatars 失败，保留原始 cloud:// fileID:', err);
+      // 转换失败时不做任何操作，image 组件会尝试直接渲染 cloud:// fileID
     });
+  },
+
+  /**
+   * 头像加载失败时的降级处理
+   */
+  onAvatarError: function () {
+    // 如果头像加载失败，清空 avatar 让默认 emoji 显示
+    var userInfo = this.data.userInfo;
+    if (userInfo.avatar) {
+      this.setData({
+        userInfo: Object.assign({}, userInfo, { avatar: '' })
+      });
+    }
+  },
+
+  /**
+   * 对方头像加载失败时的降级处理
+   */
+  onPartnerAvatarError: function () {
+    var partnerInfo = this.data.partnerInfo;
+    if (partnerInfo && partnerInfo.avatar) {
+      this.setData({
+        partnerInfo: Object.assign({}, partnerInfo, { avatar: '' })
+      });
+    }
   },
 
   /**
