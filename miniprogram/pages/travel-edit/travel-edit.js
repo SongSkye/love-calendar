@@ -222,7 +222,14 @@ Page({
 
     try {
       if (this.data.isEdit) {
-        await db.collection('trips').doc(this.data.tripId).update({ data: data });
+        // 编辑走云函数（admin 权限，双方都能改旅行基本信息）
+        var updateRes = await wx.cloud.callFunction({
+          name: 'updateTripItem',
+          data: { action: 'updateTrip', id: this.data.tripId, data: data },
+        });
+        if (!updateRes.result || !updateRes.result.success) {
+          throw new Error(updateRes.result ? updateRes.result.message : '云函数返回异常');
+        }
         wx.showToast({ title: '已保存', icon: 'success' });
         setTimeout(function () { wx.navigateBack(); }, 1500);
       } else {

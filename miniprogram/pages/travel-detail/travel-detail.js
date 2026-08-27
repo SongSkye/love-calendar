@@ -320,16 +320,19 @@ Page({
     }
 
     this.setData({ saving: true });
-    var db = app.getDb();
     var now = new Date().toISOString();
     var uid = app.getUserId();
 
     try {
       if (this.data.editingItem) {
-        // 更新
-        await db.collection('trip_items').doc(this.data.editingItem._id).update({
-          data: { fields: fields, updatedAt: now },
+        // 更新（走云函数，admin 权限，双方都能改）
+        var updateRes = await wx.cloud.callFunction({
+          name: 'updateTripItem',
+          data: { action: 'update', id: this.data.editingItem._id, data: { fields: fields } },
         });
+        if (!updateRes.result || !updateRes.result.success) {
+          throw new Error(updateRes.result ? updateRes.result.message : '云函数返回异常');
+        }
       } else {
         // 新增：sortOrder 取当前分区最大值+1
         var list = this.data.groupedItems[category] || [];
@@ -346,18 +349,24 @@ Page({
             if (it.sortOrder > maxSort) maxSort = it.sortOrder;
           });
         }
-        await db.collection('trip_items').add({
+        // 新增也走云函数（admin 权限写入，_openid 统一，后续双方都能改）
+        var addRes = await wx.cloud.callFunction({
+          name: 'updateTripItem',
           data: {
-            tripId: this.data.tripId,
-            coupleId: app.globalData.coupleId,
-            category: category,
-            sortOrder: maxSort + 1,
-            fields: fields,
-            createdBy: uid,
-            createdAt: now,
-            updatedAt: now,
+            action: 'add',
+            data: {
+              tripId: this.data.tripId,
+              coupleId: app.globalData.coupleId,
+              category: category,
+              sortOrder: maxSort + 1,
+              fields: fields,
+              createdBy: uid,
+            },
           },
         });
+        if (!addRes.result || !addRes.result.success) {
+          throw new Error(addRes.result ? addRes.result.message : '云函数返回异常');
+        }
       }
       wx.showToast({ title: '已保存', icon: 'success' });
       this.setData({ showEditModal: false });
@@ -383,12 +392,19 @@ Page({
       success: async function (res) {
         if (!res.confirm) return;
         try {
-          await app.getDb().collection('trip_items').doc(item._id).remove();
+          // 走云函数删除（admin 权限，双方都能删）
+          var delRes = await wx.cloud.callFunction({
+            name: 'updateTripItem',
+            data: { action: 'delete', id: item._id },
+          });
+          if (!delRes.result || !delRes.result.success) {
+            throw new Error(delRes.result ? delRes.result.message : '云函数返回异常');
+          }
           wx.showToast({ title: '已删除', icon: 'success' });
           that.loadDetail();
         } catch (err) {
           console.error('删除明细失败:', err);
-          wx.showToast({ title: '删除失败（无权限）', icon: 'none' });
+          wx.showToast({ title: '删除失败', icon: 'none' });
         }
       },
     });
@@ -414,16 +430,19 @@ Page({
         if (!res.confirm) return;
         try {
           wx.showLoading({ title: '删除中...' });
-          var db = app.getDb();
           var id = that.data.tripId;
           // 删除封面图
           if (that.data.trip.coverImage) {
             wx.cloud.deleteFile({ fileList: [that.data.trip.coverImage] }).catch(function () {});
           }
-          // 删除所有明细
-          await db.collection('trip_items').where({ tripId: id }).remove();
-          // 删除旅行
-          await db.collection('trips').doc(id).remove();
+          // 走云函数级联删除（admin 权限，双方都能删）
+          var delRes = await wx.cloud.callFunction({
+            name: 'updateTripItem',
+            data: { action: 'deleteTrip', id: id },
+          });
+          if (!delRes.result || !delRes.result.success) {
+            throw new Error(delRes.result ? delRes.result.message : '云函数返回异常');
+          }
           wx.hideLoading();
           wx.showToast({ title: '已删除', icon: 'success' });
           setTimeout(function () { wx.navigateBack(); }, 1500);
