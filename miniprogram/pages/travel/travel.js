@@ -143,7 +143,7 @@ Page({
       });
       var tripId = tripRes._id;
 
-      // 2. 批量创建 trip_items（每批 20 个，避免并发过多）
+      // 2. 逐条创建 trip_items（串行 add，避免并发限流导致部分丢失）
       var items = sample.TRIP_ITEMS.map(function (item) {
         return {
           tripId: tripId,
@@ -157,15 +157,22 @@ Page({
         };
       });
 
-      for (var i = 0; i < items.length; i += 20) {
-        var batch = items.slice(i, i + 20);
-        await Promise.all(batch.map(function (item) {
-          return db.collection('trip_items').add({ data: item });
-        }));
+      var successCount = 0;
+      for (var i = 0; i < items.length; i++) {
+        try {
+          await db.collection('trip_items').add({ data: items[i] });
+          successCount++;
+        } catch (e) {
+          console.warn('第' + i + '条明细导入失败:', e);
+        }
       }
 
       wx.hideLoading();
-      wx.showToast({ title: '攻略已导入', icon: 'success' });
+      if (successCount < items.length) {
+        wx.showToast({ title: '部分明细未导入(' + successCount + '/' + items.length + ')', icon: 'none', duration: 3000 });
+      } else {
+        wx.showToast({ title: '攻略已导入', icon: 'success' });
+      }
       // 跳转到详情页查看
       setTimeout(function () {
         wx.navigateTo({ url: '/pages/travel-detail/travel-detail?id=' + tripId });

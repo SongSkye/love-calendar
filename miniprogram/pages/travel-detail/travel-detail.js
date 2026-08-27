@@ -147,17 +147,30 @@ Page({
         }.bind(this));
       }
 
-      // 2. 所有明细行
-      var itemsRes = await db.collection('trip_items')
-        .where({ tripId: id })
-        .orderBy('category', 'asc')
-        .orderBy('sortOrder', 'asc')
-        .get();
+      // 2. 所有明细行（云数据库 get 默认只返回 20 条，需分页取全部）
+      var allItems = [];
+      var pageSize = 20;
+      var skip = 0;
+      // 循环取，每次 20 条，直到取空
+      while (true) {
+        var pageRes = await db.collection('trip_items')
+          .where({ tripId: id })
+          .orderBy('category', 'asc')
+          .orderBy('sortOrder', 'asc')
+          .skip(skip)
+          .limit(pageSize)
+          .get();
+        allItems = allItems.concat(pageRes.data);
+        if (pageRes.data.length < pageSize) break;
+        skip += pageSize;
+        // 安全上限，避免异常死循环
+        if (skip > 500) break;
+      }
 
       // 3. 按 category 分组
       var grouped = {};
       CATEGORIES.forEach(function (c) { grouped[c.key] = []; });
-      itemsRes.data.forEach(function (item) {
+      allItems.forEach(function (item) {
         if (grouped[item.category]) grouped[item.category].push(item);
       });
 
