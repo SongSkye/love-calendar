@@ -192,7 +192,8 @@
           wx:if="{{item.type === 'textarea'}}"
           class="form-input"
           placeholder="{{item.placeholder}}"
-          value="{{formData[item.key]}}"
+          value="{{item.value}}"
+          data-index="{{index}}"
           data-key="{{item.key}}"
           bindinput="onFieldInput"
           auto-height
@@ -201,7 +202,8 @@
           wx:else
           class="form-input"
           placeholder="{{item.placeholder}}"
-          value="{{formData[item.key]}}"
+          value="{{item.value}}"
+          data-index="{{index}}"
           data-key="{{item.key}}"
           bindinput="onFieldInput"
         ></input>

@@ -237,10 +237,14 @@ Page({
       var maxDay = days.length > 0 ? days[days.length - 1].day : 0;
       formData.day = String(maxDay + 1);
     }
+    // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
+    var editFields = FIELD_CONFIG[category].map(function (f) {
+      return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: formData[f.key] || '' };
+    });
     this.setData({
       showEditModal: true,
       editCategory: category,
-      editFields: FIELD_CONFIG[category],
+      editFields: editFields,
       editingItem: null,
       formData: formData,
     });
@@ -254,27 +258,33 @@ Page({
     var category = item.category;
     // 把 fields 拷到 formData 供表单回填
     var formData = {};
-    FIELD_CONFIG[category].forEach(function (f) {
-      formData[f.key] = item.fields[f.key] != null ? String(item.fields[f.key]) : '';
+    // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
+    var editFields = FIELD_CONFIG[category].map(function (f) {
+      var v = item.fields[f.key] != null ? String(item.fields[f.key]) : '';
+      formData[f.key] = v;
+      return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: v };
     });
     this.setData({
       showEditModal: true,
       editCategory: category,
-      editFields: FIELD_CONFIG[category],
+      editFields: editFields,
       editingItem: item,
       formData: formData,
     });
   },
 
   /**
-   * 表单输入
+   * 表单输入：同步更新 editFields[index].value 和 formData[key]
    */
   onFieldInput: function (e) {
+    var index = e.currentTarget.dataset.index;
     var key = e.currentTarget.dataset.key;
     var value = e.detail.value;
+    var editFields = this.data.editFields;
+    editFields[index].value = value;
     var formData = this.data.formData;
     formData[key] = value;
-    this.setData({ formData: formData });
+    this.setData({ editFields: editFields, formData: formData });
   },
 
   /**
