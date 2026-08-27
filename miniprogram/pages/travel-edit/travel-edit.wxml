@@ -1,0 +1,135 @@
+<!-- 旅行编辑页 -->
+<view class="edit-page">
+  <!-- 封面图 -->
+  <view class="cover-section">
+    <view class="cover-preview" bindtap="chooseCover">
+      <image wx:if="{{coverImage}}" src="{{coverImage}}" mode="aspectFill" class="cover-img"></image>
+      <view wx:else class="cover-placeholder">
+        <text class="cover-placeholder-icon">📷</text>
+        <text class="cover-placeholder-text">点击上传封面图</text>
+      </view>
+    </view>
+  </view>
+
+  <view class="form-card">
+    <!-- 名称 -->
+    <view class="form-group">
+      <view class="form-label">旅行名称</view>
+      <input class="form-input" placeholder="如：大理蜜月旅行" value="{{title}}" bindinput="onTitleInput" maxlength="30" />
+    </view>
+
+    <!-- 出发地 / 目的地 -->
+    <view class="form-row">
+      <view class="form-group half">
+        <view class="form-label">出发地</view>
+        <input class="form-input" placeholder="如 洛阳" value="{{departure}}" bindinput="onDepartureInput" />
+      </view>
+      <view class="form-group half">
+        <view class="form-label">目的地</view>
+        <input class="form-input" placeholder="如 云南大理" value="{{destination}}" bindinput="onDestinationInput" />
+      </view>
+    </view>
+
+    <!-- 日期 -->
+    <view class="form-row">
+      <view class="form-group half">
+        <view class="form-label">开始日期</view>
+        <picker mode="date" value="{{startDate}}" bindchange="onStartDateChange">
+          <view class="date-picker">{{startDate || '选择日期'}}</view>
+        </picker>
+      </view>
+      <view class="form-group half">
+        <view class="form-label">结束日期</view>
+        <picker mode="date" value="{{endDate}}" bindchange="onEndDateChange">
+          <view class="date-picker">{{endDate || '选择日期'}}</view>
+        </picker>
+      </view>
+    </view>
+
+    <!-- 天数 -->
+    <view class="form-row">
+      <view class="form-group half">
+        <view class="form-label">天数</view>
+        <input class="form-input" type="number" placeholder="如 5" value="{{days}}" bindinput="onDaysInput" />
+      </view>
+      <view class="form-group half">
+        <view class="form-label">晚数</view>
+        <input class="form-input" type="number" placeholder="如 4" value="{{nights}}" bindinput="onNightsInput" />
+      </view>
+    </view>
+
+    <!-- 类型 / 人数 -->
+    <view class="form-row">
+      <view class="form-group half">
+        <view class="form-label">旅行类型</view>
+        <input class="form-input" placeholder="如 蜜月旅行" value="{{travelType}}" bindinput="onTravelTypeInput" />
+      </view>
+      <view class="form-group half">
+        <view class="form-label">出行人数</view>
+        <input class="form-input" placeholder="如 双人" value="{{travelers}}" bindinput="onTravelersInput" />
+      </view>
+    </view>
+
+    <!-- 交通 -->
+    <view class="form-group">
+      <view class="form-label">往返交通</view>
+      <textarea class="form-input area" placeholder="如 去程：洛阳 ✈ 昆明 → 高铁 大理" value="{{transport}}" bindinput="onTransportInput" auto-height />
+    </view>
+
+    <!-- 预算 -->
+    <view class="form-row">
+      <view class="form-group half">
+        <view class="form-label">预算下限(元)</view>
+        <input class="form-input" type="number" placeholder="如 12000" value="{{budgetMin}}" bindinput="onBudgetMinInput" />
+      </view>
+      <view class="form-group half">
+        <view class="form-label">预算上限(元)</view>
+        <input class="form-input" type="number" placeholder="如 18000" value="{{budgetMax}}" bindinput="onBudgetMaxInput" />
+      </view>
+    </view>
+    <view class="form-group">
+      <view class="form-label">预算说明</view>
+      <input class="form-input" placeholder="如 约1.2-1.8万（双人，含...）" value="{{budgetNote}}" bindinput="onBudgetNoteInput" />
+    </view>
+
+    <!-- 基调 -->
+    <view class="form-group">
+      <view class="form-label">行程基调</view>
+      <textarea class="form-input area" placeholder="如 轻松浪漫、丰俭由人..." value="{{tone}}" bindinput="onToneInput" auto-height />
+    </view>
+  </view>
+
+  <!-- 每日概览 -->
+  <view class="form-card">
+    <view class="sub-header">
+      <text class="form-label-inline">📋 每日概览</text>
+      <text class="add-sub-btn" bindtap="addOverview">+ 添加</text>
+    </view>
+    <view class="sub-item" wx:for="{{dailyOverview}}" wx:key="index">
+      <text class="sub-day-tag">Day {{item.day}}</text>
+      <textarea class="form-input sub-input" placeholder="当天概要，如 洱海西线环湖..." value="{{item.summary}}" data-index="{{index}}" bindinput="onOverviewInput" auto-height />
+      <text class="sub-del" catchtap="removeOverview" data-index="{{index}}">×</text>
+    </view>
+    <view class="sub-empty" wx:if="{{dailyOverview.length === 0}}">暂无，点「添加」录入每日概要</view>
+  </view>
+
+  <!-- 温馨提示 -->
+  <view class="form-card">
+    <view class="sub-header">
+      <text class="form-label-inline">💡 温馨提示</text>
+      <text class="add-sub-btn" bindtap="addTip">+ 添加</text>
+    </view>
+    <view class="sub-item" wx:for="{{tips}}" wx:key="index">
+      <textarea class="form-input sub-input" placeholder="如 早晚温差大，带薄外套..." value="{{item}}" data-index="{{index}}" bindinput="onTipInput" auto-height />
+      <text class="sub-del" catchtap="removeTip" data-index="{{index}}">×</text>
+    </view>
+    <view class="sub-empty" wx:if="{{tips.length === 0}}">暂无，点「添加」录入提示</view>
+  </view>
+
+  <!-- 保存 -->
+  <view class="save-area">
+    <button class="btn-save" bindtap="saveAll" loading="{{saving}}">
+      {{isEdit ? '保存修改' : '创建旅行'}}
+    </button>
+  </view>
+</view>

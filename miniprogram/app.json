@@ -10,7 +10,10 @@
     "pages/mine/mine",
     "pages/photos/photos",
     "pages/gacha/gacha",
-    "pages/gacha-collection/gacha-collection"
+    "pages/gacha-collection/gacha-collection",
+    "pages/travel/travel",
+    "pages/travel-detail/travel-detail",
+    "pages/travel-edit/travel-edit"
   ],
   "window": {
     "backgroundTextStyle": "light",

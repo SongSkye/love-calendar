@@ -1,0 +1,215 @@
+<!-- 旅行详情页 -->
+<view class="detail-page">
+  <view class="loading-box" wx:if="{{loading}}"><text>加载中...</text></view>
+
+  <block wx:if="{{!loading}}">
+    <!-- 顶部封面 + 基本信息 -->
+    <view class="detail-cover">
+      <image wx:if="{{trip.coverImage}}" src="{{trip.coverImage}}" mode="aspectFill" class="cover-img"></image>
+      <view wx:else class="cover-default"><text class="cover-icon">✈️</text></view>
+      <view class="cover-info">
+        <view class="cover-title">{{trip.title}}</view>
+        <view class="cover-sub">{{trip.departure}} → {{trip.destination}} · {{trip.startDate}} ~ {{trip.endDate}}</view>
+      </view>
+      <view class="cover-countdown">
+        <text class="countdown-num">{{trip.countdown}}</text>
+        <text class="countdown-label">{{trip.countdownLabel}}</text>
+      </view>
+    </view>
+
+    <!-- 基本信息 -->
+    <view class="info-card">
+      <view class="info-row" wx:if="{{trip.travelType}}"><text class="info-key">类型</text><text class="info-val">{{trip.travelType}} · {{trip.travelers}}</text></view>
+      <view class="info-row" wx:if="{{trip.days}}"><text class="info-key">天数</text><text class="info-val">{{trip.days}}天{{trip.nights}}晚</text></view>
+      <view class="info-row" wx:if="{{trip.transport}}"><text class="info-key">交通</text><text class="info-val">{{trip.transport}}</text></view>
+      <view class="info-row" wx:if="{{trip.budgetNote}}"><text class="info-key">预算</text><text class="info-val">{{trip.budgetNote}}</text></view>
+      <view class="info-row" wx:if="{{trip.tone}}"><text class="info-key">基调</text><text class="info-val">{{trip.tone}}</text></view>
+    </view>
+
+    <!-- 每日概览 -->
+    <view class="section" wx:if="{{trip.dailyOverview && trip.dailyOverview.length > 0}}">
+      <view class="section-title">📋 每日概览</view>
+      <view class="overview-item" wx:for="{{trip.dailyOverview}}" wx:key="day">
+        <text class="overview-day">Day {{item.day}}</text>
+        <text class="overview-text">{{item.summary}}</text>
+      </view>
+    </view>
+
+    <!-- 温馨提示 -->
+    <view class="section" wx:if="{{trip.tips && trip.tips.length > 0}}">
+      <view class="section-title">💡 温馨提示</view>
+      <view class="tip-item" wx:for="{{trip.tips}}" wx:key="*this">· {{item}}</view>
+    </view>
+
+    <!-- 操作按钮 -->
+    <view class="action-row">
+      <view class="action-btn" bindtap="editTrip"><text>✏️ 编辑</text></view>
+      <view class="action-btn danger" bindtap="deleteTrip"><text>🗑 删除</text></view>
+    </view>
+
+    <!-- 分区 tab 栏 -->
+    <scroll-view class="cat-tabs" scroll-x>
+      <view
+        class="cat-tab {{activeCategory === item.key ? 'active' : ''}}"
+        wx:for="{{categories}}"
+        wx:key="key"
+        data-key="{{item.key}}"
+        bindtap="switchCategory"
+      >
+        <text class="cat-tab-emoji">{{item.emoji}}</text>
+        <text class="cat-tab-name">{{item.name}}</text>
+      </view>
+    </scroll-view>
+
+    <!-- 当前 tab 明细列表 -->
+    <view class="items-area">
+      <!-- 空状态 -->
+      <view class="items-empty" wx:if="{{currentList.length === 0}}">
+        <text class="empty-icon">📝</text>
+        <text class="empty-text">还没有内容，点下方 + 添加</text>
+      </view>
+
+      <!-- itinerary：按天分组 -->
+      <block wx:if="{{activeCategory === 'itinerary'}}">
+        <view class="day-group" wx:for="{{currentList}}" wx:key="day" wx:for-item="dayGroup">
+          <view class="day-header">
+            <text class="day-badge">Day {{dayGroup.day}}</text>
+            <text class="day-lodging" wx:if="{{dayGroup.items[0].fields.lodgingNote}}">🏨 {{dayGroup.items[0].fields.lodgingNote}}</text>
+          </view>
+          <view class="item-card" wx:for="{{dayGroup.items}}" wx:key="_id" wx:for-item="row">
+            <view class="item-main" bindtap="editItem" data-item="{{row}}">
+              <view class="item-row1">
+                <text class="item-time">{{row.fields.timeSlot}}</text>
+                <text class="item-activity">{{row.fields.activity}}</text>
+              </view>
+              <view class="item-meta">
+                <text wx:if="{{row.fields.playDuration}}" class="meta-tag">⏱ {{row.fields.playDuration}}</text>
+                <text wx:if="{{row.fields.nextStop}}" class="meta-tag">🚗 {{row.fields.nextStop}}</text>
+              </view>
+              <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+            </view>
+            <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+          </view>
+        </view>
+      </block>
+
+      <!-- lodging -->
+      <block wx:if="{{activeCategory === 'lodging'}}">
+        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-time">{{row.fields.date}}</text>
+              <text class="item-activity">{{row.fields.hotel}}</text>
+            </view>
+            <view class="item-meta">
+              <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
+              <text wx:if="{{row.fields.price}}" class="meta-tag">💰 {{row.fields.price}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.feature}}">{{row.fields.feature}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+
+      <!-- restaurant -->
+      <block wx:if="{{activeCategory === 'restaurant'}}">
+        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-time">{{row.fields.perCapita}}</text>
+              <text class="item-activity">{{row.fields.name}}</text>
+            </view>
+            <view class="item-meta">
+              <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.dishes}}">{{row.fields.dishes}}</view>
+            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+
+      <!-- ticket -->
+      <block wx:if="{{activeCategory === 'ticket'}}">
+        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-time">{{row.fields.couplePrice}}</text>
+              <text class="item-activity">{{row.fields.project}}</text>
+            </view>
+            <view class="item-meta">
+              <text wx:if="{{row.fields.singlePrice}}" class="meta-tag">单人 {{row.fields.singlePrice}}</text>
+              <text wx:if="{{row.fields.bookingMethod}}" class="meta-tag">🎫 {{row.fields.bookingMethod}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+
+      <!-- budget -->
+      <block wx:if="{{activeCategory === 'budget'}}">
+        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-activity">{{row.fields.budgetCategory}}</text>
+              <text class="item-time">{{row.fields.amount}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+
+      <!-- packing -->
+      <block wx:if="{{activeCategory === 'packing'}}">
+        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-time">{{row.fields.packCategory}}</text>
+              <text class="item-activity">{{row.fields.item}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+    </view>
+
+    <!-- 添加明细浮动按钮 -->
+    <view class="fab" bindtap="addItem">+</view>
+  </block>
+</view>
+
+<!-- 明细编辑弹窗 -->
+<view class="modal-mask" wx:if="{{showEditModal}}" bindtap="closeEditModal">
+  <view class="modal-box" catchtap="noop">
+    <view class="modal-title">{{editingItem ? '编辑' : '新增'}}明细</view>
+    <scroll-view scroll-y class="modal-form">
+      <view class="form-item" wx:for="{{editFields}}" wx:key="key">
+        <text class="form-label">{{item.label}}</text>
+        <textarea
+          wx:if="{{item.type === 'textarea'}}"
+          class="form-input"
+          placeholder="{{item.placeholder}}"
+          value="{{formData[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onFieldInput"
+          auto-height
+        ></textarea>
+        <input
+          wx:else
+          class="form-input"
+          placeholder="{{item.placeholder}}"
+          value="{{formData[item.key]}}"
+          data-key="{{item.key}}"
+          bindinput="onFieldInput"
+        ></input>
+      </view>
+    </scroll-view>
+    <view class="modal-actions">
+      <button class="modal-btn cancel" bindtap="closeEditModal">取消</button>
+      <button class="modal-btn confirm" bindtap="saveItem" loading="{{saving}}">保存</button>
+    </view>
+  </view>
+</view>

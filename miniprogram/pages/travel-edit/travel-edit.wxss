@@ -1,0 +1,203 @@
+/* 旅行编辑页样式 */
+.edit-page {
+  padding: 30rpx;
+  min-height: 100vh;
+  box-sizing: border-box;
+  background: #FFF5F6;
+  padding-bottom: 120rpx;
+}
+
+/* 封面 */
+.cover-section {
+  margin-bottom: 20rpx;
+}
+
+.cover-preview {
+  width: 100%;
+  height: 320rpx;
+  border-radius: 20rpx;
+  overflow: hidden;
+  background: #FFFFFF;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.06);
+}
+
+.cover-preview .cover-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: #CCCCCC;
+  border: 2rpx dashed #E0E0E0;
+  border-radius: 20rpx;
+}
+
+.cover-placeholder-icon {
+  font-size: 60rpx;
+  margin-bottom: 12rpx;
+}
+
+.cover-placeholder-text {
+  font-size: 26rpx;
+}
+
+/* 表单卡片 */
+.form-card {
+  background: #FFFFFF;
+  border-radius: 20rpx;
+  padding: 30rpx;
+  margin-bottom: 20rpx;
+  box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+}
+
+.form-group {
+  margin-bottom: 24rpx;
+}
+
+.form-group.half {
+  flex: 1;
+  min-width: 0;
+}
+
+.form-row {
+  display: flex;
+  gap: 20rpx;
+}
+
+.form-label {
+  font-size: 26rpx;
+  color: #666;
+  margin-bottom: 12rpx;
+}
+
+.form-input {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+.form-input.area {
+  min-height: 80rpx;
+  line-height: 1.6;
+}
+
+.date-picker {
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  padding: 24rpx 20rpx;
+  font-size: 28rpx;
+  color: #333;
+}
+
+/* 子表单（每日概览 / 提示） */
+.sub-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 16rpx;
+}
+
+.form-label-inline {
+  font-size: 28rpx;
+  font-weight: bold;
+  color: #333;
+}
+
+.add-sub-btn {
+  font-size: 26rpx;
+  color: #FF6B81;
+  padding: 6rpx 20rpx;
+  border: 2rpx solid #FF6B81;
+  border-radius: 20rpx;
+}
+
+.add-sub-btn:active {
+  opacity: 0.7;
+}
+
+.sub-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12rpx;
+  margin-bottom: 16rpx;
+  position: relative;
+}
+
+.sub-day-tag {
+  position: absolute;
+  top: 16rpx;
+  left: 20rpx;
+  font-size: 22rpx;
+  color: #FF6B81;
+  font-weight: bold;
+  z-index: 2;
+  background: rgba(255, 107, 129, 0.1);
+  padding: 2rpx 12rpx;
+  border-radius: 8rpx;
+}
+
+.sub-input {
+  flex: 1;
+  padding: 16rpx 20rpx 16rpx 110rpx;
+  background: #FFF5F6;
+  border-radius: 16rpx;
+  font-size: 26rpx;
+  min-height: 80rpx;
+  line-height: 1.6;
+  box-sizing: border-box;
+}
+
+.sub-input:not(.itinerary-day) {
+  padding: 16rpx 20rpx;
+}
+
+.sub-del {
+  width: 48rpx;
+  height: 48rpx;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 36rpx;
+  color: #CCCCCC;
+  flex-shrink: 0;
+}
+
+.sub-del:active {
+  color: #FF4D4F;
+}
+
+.sub-empty {
+  font-size: 24rpx;
+  color: #CCCCCC;
+  text-align: center;
+  padding: 20rpx 0;
+}
+
+/* 保存 */
+.save-area {
+  padding: 20rpx 0;
+}
+
+.btn-save {
+  background: linear-gradient(135deg, #FF6B81, #FF8E9E);
+  color: #FFF;
+  border-radius: 50rpx;
+  font-size: 32rpx;
+  padding: 24rpx 0;
+  border: none;
+  box-shadow: 0 8rpx 24rpx rgba(255, 107, 129, 0.3);
+}
+
+.btn-save::after {
+  border: none;
+}

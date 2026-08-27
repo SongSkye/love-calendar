@@ -1,0 +1,55 @@
+<!-- 旅行计划列表页 -->
+<view class="travel-page">
+  <!-- 加载中 -->
+  <view class="loading-box" wx:if="{{loading && trips.length === 0}}">
+    <text>加载中...</text>
+  </view>
+
+  <!-- 空状态 -->
+  <view class="empty-state" wx:if="{{trips.length === 0 && !loading}}">
+    <view class="empty-icon">✈️</view>
+    <view class="empty-text">还没有旅行计划</view>
+    <view class="empty-sub">添加属于你们的旅行吧</view>
+    <view class="empty-actions">
+      <view class="sample-btn" bindtap="loadSample">📋 加载大理蜜月攻略示例</view>
+      <view class="empty-add-btn" bindtap="addTrip">+ 新建旅行</view>
+    </view>
+  </view>
+
+  <!-- 旅行卡片列表 -->
+  <view class="travel-list" wx:if="{{trips.length > 0}}">
+    <view
+      class="travel-card"
+      wx:for="{{trips}}"
+      wx:key="_id"
+      bindtap="goDetail"
+      data-id="{{item._id}}"
+    >
+      <!-- 封面图 -->
+      <view class="card-cover">
+        <image wx:if="{{item.coverImage}}" src="{{item.coverImage}}" mode="aspectFill" class="cover-img"></image>
+        <view wx:else class="cover-default">
+          <text class="cover-icon">✈️</text>
+        </view>
+        <view class="cover-tag">{{item.travelType || '旅行'}}</view>
+      </view>
+
+      <view class="card-body">
+        <view class="card-left">
+          <view class="card-title">{{item.title}}</view>
+          <view class="card-route">📍 {{item.departure}} → {{item.destination}}</view>
+          <view class="card-date">📅 {{item.startDate}} ~ {{item.endDate}}</view>
+        </view>
+        <view class="card-right">
+          <view class="card-countdown">
+            <text class="countdown-num">{{item.countdown}}</text>
+            <text class="countdown-label">{{item.countdownLabel}}</text>
+          </view>
+        </view>
+      </view>
+    </view>
+  </view>
+
+  <!-- 浮动新增按钮 -->
+  <view class="fab" bindtap="addTrip" wx:if="{{trips.length > 0}}">+</view>
+</view>

@@ -267,6 +267,13 @@ Page({
   },
 
   /**
+   * 跳转到旅行计划
+   */
+  goTravel() {
+    wx.navigateTo({ url: '/pages/travel/travel' });
+  },
+
+  /**
    * 跳转到卡片图鉴
    */
   goCollection() {

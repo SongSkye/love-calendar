@@ -10,3 +10,6 @@ preview-qrcode.png
 
 # 敏感文件，绝对不能提交
 private.key
+
+# 原始资料文件（攻略内容已转成 travel-sample.js，xlsx 仅作本地参考）
+*.xlsx
