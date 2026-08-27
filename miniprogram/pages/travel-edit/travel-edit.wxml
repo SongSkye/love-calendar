@@ -106,9 +106,9 @@
       <text class="add-sub-btn" bindtap="addOverview">+ 添加</text>
     </view>
     <view class="sub-item" wx:for="{{dailyOverview}}" wx:key="index">
-      <text class="sub-day-tag">Day {{item.day}}</text>
+      <view class="sub-day-tag">Day {{item.day}}</view>
       <textarea class="form-input sub-input" placeholder="当天概要，如 洱海西线环湖..." value="{{item.summary}}" data-index="{{index}}" bindinput="onOverviewInput" auto-height />
-      <text class="sub-del" catchtap="removeOverview" data-index="{{index}}">×</text>
+      <view class="sub-del" catchtap="removeOverview" data-index="{{index}}">×</view>
     </view>
     <view class="sub-empty" wx:if="{{dailyOverview.length === 0}}">暂无，点「添加」录入每日概要</view>
   </view>
@@ -120,8 +120,8 @@
       <text class="add-sub-btn" bindtap="addTip">+ 添加</text>
     </view>
     <view class="sub-item" wx:for="{{tips}}" wx:key="index">
-      <textarea class="form-input sub-input" placeholder="如 早晚温差大，带薄外套..." value="{{item}}" data-index="{{index}}" bindinput="onTipInput" auto-height />
-      <text class="sub-del" catchtap="removeTip" data-index="{{index}}">×</text>
+      <textarea class="form-input sub-input tip-input" placeholder="如 早晚温差大，带薄外套..." value="{{item}}" data-index="{{index}}" bindinput="onTipInput" auto-height />
+      <view class="sub-del" catchtap="removeTip" data-index="{{index}}">×</view>
     </view>
     <view class="sub-empty" wx:if="{{tips.length === 0}}">暂无，点「添加」录入提示</view>
   </view>
