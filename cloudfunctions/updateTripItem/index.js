@@ -1,12 +1,13 @@
 /**
  * updateTripItem 云函数
- * 用 admin 权限操作 trip_items 集合，绕过"修改本人数据"限制
- * 让情侣双方都能编辑/删除/新增旅行明细（不限创建者）
+ * 用 admin 权限操作 trip_items / trips / couples 集合，绕过"修改本人数据"限制
+ * 让情侣双方都能编辑/删除/新增旅行明细、旅行基本信息、出行准备清单（不限创建者）
  *
  * event 参数：
- *   action: 'update' | 'delete' | 'add'
- *   id:     明细 _id（update/delete 必填）
- *   data:   明细数据（add/update 必填）
+ *   action: 'update' | 'delete' | 'add' | 'deleteTrip' | 'updateTrip' | 'updatePackingList'
+ *   id:     明细 _id（update/delete 必填）或旅行 _id（deleteTrip/updateTrip 必填）
+ *   coupleId: updatePackingList 必填
+ *   data:   明细/旅行/准备清单数据（add/update/updateTrip/updatePackingList 必填）
  */
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -63,6 +64,15 @@ exports.main = async (event, context) => {
       if (!id) return { success: false, message: '缺少 id' };
       const updateData = Object.assign({}, data, { updatedAt: new Date().toISOString() });
       const res = await db.collection('trips').doc(id).update({ data: updateData });
+      return { success: true, updated: res.stats.updated };
+
+    } else if (action === 'updatePackingList') {
+      // 更新出行准备清单（存 couples.packingList，双方共享同步）
+      if (!event.coupleId) return { success: false, message: '缺少 coupleId' };
+      if (!data || !data.packingList) return { success: false, message: '缺少 packingList' };
+      const res = await db.collection('couples').doc(event.coupleId).update({
+        data: { packingList: data.packingList, packingUpdatedAt: new Date().toISOString() },
+      });
       return { success: true, updated: res.stats.updated };
 
     } else {
