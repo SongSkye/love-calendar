@@ -39,12 +39,16 @@ Page({
 
   /**
    * 加载出行准备清单（存 couples.packingList，双方共享）
-   * 首次没有时用 travel-packing.js 的默认清单初始化展示
+   * 首次没有 / 加载失败时用 travel-packing.js 的默认清单初始化展示，保证弹窗不为空
    */
   async loadPackingList() {
     var db = app.getDb();
     var coupleId = app.globalData.coupleId;
-    if (!coupleId) return;
+    if (!coupleId) {
+      // 无 coupleId 也兜底默认清单，避免弹窗空白
+      this.setData({ packingList: packing.PACKING_LIST });
+      return;
+    }
     try {
       var res = await db.collection('couples').doc(coupleId).get();
       var list = res.data && res.data.packingList;
@@ -54,6 +58,8 @@ Page({
       this.setData({ packingList: list });
     } catch (err) {
       console.error('加载准备清单失败:', err);
+      // 出错兜底默认清单，避免弹窗空白
+      this.setData({ packingList: packing.PACKING_LIST });
     }
   },
 

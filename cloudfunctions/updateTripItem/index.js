@@ -8,6 +8,7 @@
  *   id:     明细 _id（update/delete 必填）或旅行 _id（deleteTrip/updateTrip 必填）
  *   coupleId: updatePackingList 必填
  *   data:   明细/旅行/准备清单数据（add/update/updateTrip/updatePackingList 必填）
+ *           add 需含 tripId + coupleId；deleteTrip 会分页取全部明细级联删除（避免 >20 条漏删）
  */
 const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
@@ -39,6 +40,8 @@ exports.main = async (event, context) => {
     } else if (action === 'add') {
       // 新增明细（admin 权限，_openid 会被设为云函数的 admin 标识）
       if (!data) return { success: false, message: '缺少 data' };
+      if (!data.tripId) return { success: false, message: '缺少 tripId' };
+      if (!data.coupleId) return { success: false, message: '缺少 coupleId' };
       const addData = Object.assign({}, data, {
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -49,15 +52,25 @@ exports.main = async (event, context) => {
     } else if (action === 'deleteTrip') {
       // 删除整条旅行：级联删除所有 trip_items + trips 文档（admin 权限，双方都能删）
       if (!id) return { success: false, message: '缺少 id' };
-      // 删除所有关联明细
-      const itemsRes = await db.collection('trip_items').where({ tripId: id }).get();
-      const tasks = itemsRes.data.map(function (item) {
+      // 云数据库 get 默认只返 20 条，明细可能很多，分页循环取全部再删，避免漏删孤儿数据
+      var allItems = [];
+      var pageSize = 20;
+      var skip = 0;
+      while (true) {
+        var pageRes = await db.collection('trip_items').where({ tripId: id }).skip(skip).limit(pageSize).get();
+        allItems = allItems.concat(pageRes.data);
+        if (pageRes.data.length < pageSize) break;
+        skip += pageSize;
+        if (skip > 500) break; // 安全上限
+      }
+      // 逐条删除（where().remove() 受单次删除上限限制，doc 删除更稳）
+      var tasks = allItems.map(function (item) {
         return db.collection('trip_items').doc(item._id).remove();
       });
       await Promise.all(tasks);
       // 删除旅行文档
       await db.collection('trips').doc(id).remove();
-      return { success: true, removedItems: itemsRes.data.length };
+      return { success: true, removedItems: allItems.length };
 
     } else if (action === 'updateTrip') {
       // 更新旅行基本信息（admin 权限，双方都能改）

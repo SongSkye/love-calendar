@@ -37,7 +37,8 @@ var TRIP_BASE = {
   ],
 };
 
-// trip_items 明细行（Sheet2-7），每条含 category / sortOrder / fields
+// trip_items 明细行（Sheet2-5），每条含 category / sortOrder / fields
+// 注：原 Sheet7「出行准备」不在此导入，改存 couples.packingList（见 travel-packing.js）
 var TRIP_ITEMS = [
   // ===== itinerary 每日行程（Sheet2，5列：时段/景点活动/建议游玩/前往下一站/备注）=====
   // Day 1 · 洛阳出发，夜抵大理古城  住宿：大理古城 / 龙龛码头民宿
@@ -105,14 +106,8 @@ var TRIP_ITEMS = [
   { category: 'ticket', sortOrder: 3, fields: { project: '南诏风情岛', singlePrice: '50 元', couplePrice: '100 元', bookingMethod: '现场购票', remark: '双廊玉几岛旁' } },
   { category: 'ticket', sortOrder: 4, fields: { project: '周城扎染体验', singlePrice: '80-150 元', couplePrice: '160-300 元', bookingMethod: '现场参加', remark: '含教学 + 布料' } },
   { category: 'ticket', sortOrder: 5, fields: { project: '洱海生态廊道骑行', singlePrice: '50-80 元', couplePrice: '80-160 元', bookingMethod: '现场租车', remark: '双人自行车 / 电动车' } },
-
-  // ===== packing 出行准备（Sheet7）=====
-  { category: 'packing', sortOrder: 0, fields: { packCategory: '证件', item: '身份证、驾驶证', remark: '租车需要驾驶证' } },
-  { category: 'packing', sortOrder: 1, fields: { packCategory: '衣物', item: '薄外套、裙子、舒适鞋', remark: '早晚温差大，拍照 + 走路兼顾' } },
-  { category: 'packing', sortOrder: 2, fields: { packCategory: '防晒', item: '防晒霜、墨镜、帽子', remark: '高原紫外线强' } },
-  { category: 'packing', sortOrder: 3, fields: { packCategory: '药品', item: '晕车药、肠胃药、创可贴', remark: '以备不时之需' } },
-  { category: 'packing', sortOrder: 4, fields: { packCategory: '电子', item: '充电宝、相机、自拍杆', remark: '蜜月大片必备' } },
-  { category: 'packing', sortOrder: 5, fields: { packCategory: '预订', item: '机票、高铁票、酒店、索道票', remark: '十一务必提前 15 天抢票' } },
+  // 注：原 Sheet7「出行准备」已从 tab 移出，改为旅行列表页「🎒 出行准备」入口，
+  //     存 couples.packingList 双方共享，默认清单见 travel-packing.js，不再作为 trip_items 导入
 ];
 
 module.exports = {
