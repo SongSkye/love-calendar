@@ -47,8 +47,8 @@
       <view class="action-btn danger" bindtap="deleteTrip"><text>🗑 删除</text></view>
     </view>
 
-    <!-- 分区 tab 栏 -->
-    <scroll-view class="cat-tabs" scroll-x>
+    <!-- 分区 tab 栏（4 个占满整行均分） -->
+    <view class="cat-tabs">
       <view
         class="cat-tab {{activeCategory === item.key ? 'active' : ''}}"
         wx:for="{{categories}}"
@@ -59,7 +59,7 @@
         <text class="cat-tab-emoji">{{item.emoji}}</text>
         <text class="cat-tab-name">{{item.name}}</text>
       </view>
-    </scroll-view>
+    </view>
 
     <!-- 当前 tab 明细列表 -->
     <view class="items-area">
@@ -76,15 +76,17 @@
             <text class="day-badge">{{dayGroup.day ? 'Day ' + dayGroup.day : '未排期'}}</text>
             <text class="day-lodging" wx:if="{{dayGroup.items[0].fields.lodgingNote}}">🏨 {{dayGroup.items[0].fields.lodgingNote}}</text>
           </view>
-          <view class="item-card" wx:for="{{dayGroup.items}}" wx:key="_id" wx:for-item="row">
+          <view class="item-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{dayGroup.items}}" wx:key="_id" wx:for-item="row">
             <view class="item-main" bindtap="editItem" data-item="{{row}}">
               <view class="item-row1">
                 <text class="item-time">{{row.fields.timeSlot}}</text>
                 <text class="item-activity">{{row.fields.activity}}</text>
+                <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
               </view>
               <view class="item-meta">
                 <text wx:if="{{row.fields.playDuration}}" class="meta-tag">⏱ {{row.fields.playDuration}}</text>
                 <text wx:if="{{row.fields.nextStop}}" class="meta-tag">🚗 {{row.fields.nextStop}}</text>
+                <text wx:if="{{row.fields.seat}}" class="meta-tag">🪑 {{row.fields.seat}}</text>
               </view>
               <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
             </view>
@@ -143,27 +145,6 @@
             <view class="item-meta">
               <text wx:if="{{row.fields.singlePrice}}" class="meta-tag">单人 {{row.fields.singlePrice}}</text>
               <text wx:if="{{row.fields.bookingMethod}}" class="meta-tag">🎫 {{row.fields.bookingMethod}}</text>
-            </view>
-            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
-          </view>
-          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
-        </view>
-      </block>
-
-      <!-- transport（新增交通分区：机票/高铁等） -->
-      <block wx:if="{{activeCategory === 'transport'}}">
-        <view class="item-card list-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
-          <view class="item-main" bindtap="editItem" data-item="{{row}}">
-            <view class="item-row1">
-              <text class="item-time">{{row.fields.type}}</text>
-              <text class="item-activity">{{row.fields.route}}</text>
-              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
-            </view>
-            <view class="item-meta">
-              <text wx:if="{{row.fields.departure}}" class="meta-tag">🛫 {{row.fields.departure}}</text>
-              <text wx:if="{{row.fields.arrival}}" class="meta-tag">🛬 {{row.fields.arrival}}</text>
-              <text wx:if="{{row.fields.seat}}" class="meta-tag">🪑 {{row.fields.seat}}</text>
-              <text wx:if="{{row.fields.price}}" class="meta-tag">💰 {{row.fields.price}}</text>
             </view>
             <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
           </view>

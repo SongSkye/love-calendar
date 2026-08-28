@@ -7,14 +7,14 @@
 var util = require('../../utils/util');
 var app = getApp();
 
-// 5 个分区配置：key / 名称 / emoji / 是否支持预订状态
+// 4 个分区配置：key / 名称 / emoji / 是否支持预订状态
+// 交通已整合进行程（航班/时间/价格写 activity 或 remark，座位+预订状态并入行程字段）
 // 准备（packing）已移至旅行列表页（travel）的「🎒 出行准备」入口，存 couples.packingList 双方共享
 var CATEGORIES = [
-  { key: 'itinerary', name: '行程', emoji: '🗺️', hasBooking: false },
+  { key: 'itinerary', name: '行程', emoji: '🗺️', hasBooking: true },
   { key: 'lodging', name: '住宿', emoji: '🏨', hasBooking: true },
   { key: 'restaurant', name: '餐厅', emoji: '🍽️', hasBooking: true },
   { key: 'ticket', name: '门票', emoji: '🎫', hasBooking: true },
-  { key: 'transport', name: '交通', emoji: '✈️', hasBooking: true },
 ];
 
 // 预订状态选项（hasBooking=true 的分区共用）
@@ -25,14 +25,17 @@ var BOOKING_OPTIONS = [
 
 // 各分区弹窗表单字段配置：fieldKey / label / 类型(input/textarea)
 var FIELD_CONFIG = {
+  // 行程：景点/活动可填航班车次+时间，座位+预订状态结构化，价格写备注
   itinerary: [
     { key: 'day', label: '第几天', type: 'input', placeholder: '如 1' },
     { key: 'timeSlot', label: '时段', type: 'input', placeholder: '如 早上' },
-    { key: 'activity', label: '景点/活动', type: 'input', placeholder: '如 漫步大理古城' },
-    { key: 'playDuration', label: '建议游玩', type: 'input', placeholder: '如 1.5-2h' },
-    { key: 'nextStop', label: '前往下一站', type: 'input', placeholder: '如 步行' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
+    { key: 'activity', label: '景点/活动', type: 'input', placeholder: '如 漫步大理古城 / 洛阳✈昆明 MU5780 08:30-11:00' },
+    { key: 'playDuration', label: '建议游玩', type: 'input', placeholder: '如 1.5-2h / 飞行2.5h' },
+    { key: 'nextStop', label: '前往下一站', type: 'input', placeholder: '如 步行 / 机场→昆明南站' },
+    { key: 'seat', label: '座位', type: 'input', placeholder: '如 23A/23B' },
+    { key: 'remark', label: '备注', type: 'input', placeholder: '如 1280元/人 去程' },
     { key: 'lodgingNote', label: '当日住宿', type: 'input', placeholder: '当天住宿说明（可空）' },
+    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   lodging: [
     { key: 'date', label: '日期', type: 'input', placeholder: '如 Day 1' },
@@ -56,17 +59,6 @@ var FIELD_CONFIG = {
     { key: 'couplePrice', label: '双人费用', type: 'input', placeholder: '如 600 元' },
     { key: 'bookingMethod', label: '预订方式', type: 'input', placeholder: '如 携程/美团提前订' },
     { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
-    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
-  ],
-  // 交通分区（新增）：机票/高铁/大巴等往返交通的结构化记录
-  transport: [
-    { key: 'type', label: '交通方式', type: 'input', placeholder: '如 飞机/高铁/大巴' },
-    { key: 'route', label: '航线/车次', type: 'input', placeholder: '如 洛阳→昆明 / MU5780' },
-    { key: 'departure', label: '出发时间', type: 'input', placeholder: '如 08-28 08:30' },
-    { key: 'arrival', label: '到达时间', type: 'input', placeholder: '如 08-28 11:00' },
-    { key: 'seat', label: '座位', type: 'input', placeholder: '如 23A/23B' },
-    { key: 'price', label: '价格', type: 'input', placeholder: '如 1280元/人' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '如 去程/返程' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
 };

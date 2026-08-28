@@ -177,25 +177,29 @@
   opacity: 0.7;
 }
 
-/* 分区 tab 栏 */
+/* 分区 tab 栏：4 个 tab 占满整行均分，不再横向滚动 */
 .cat-tabs {
   display: flex;
-  white-space: nowrap;
   padding: 8rpx 20rpx;
   margin-bottom: 12rpx;
 }
 
 .cat-tab {
-  display: inline-flex;
+  flex: 1;
+  display: flex;
   flex-direction: column;
   align-items: center;
   gap: 2rpx;
-  padding: 14rpx 28rpx;
+  padding: 14rpx 0;
   margin-right: 16rpx;
   background: #FFFFFF;
   border-radius: 18rpx;
   box-shadow: 0 2rpx 12rpx rgba(0, 0, 0, 0.04);
   transition: all 0.2s;
+}
+
+.cat-tab:last-child {
+  margin-right: 0;
 }
 
 .cat-tab.active {
