@@ -95,11 +95,12 @@
 
       <!-- lodging -->
       <block wx:if="{{activeCategory === 'lodging'}}">
-        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+        <view class="item-card list-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
           <view class="item-main" bindtap="editItem" data-item="{{row}}">
             <view class="item-row1">
               <text class="item-time">{{row.fields.date}}</text>
               <text class="item-activity">{{row.fields.hotel}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
@@ -113,11 +114,12 @@
 
       <!-- restaurant -->
       <block wx:if="{{activeCategory === 'restaurant'}}">
-        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+        <view class="item-card list-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
           <view class="item-main" bindtap="editItem" data-item="{{row}}">
             <view class="item-row1">
               <text class="item-time">{{row.fields.perCapita}}</text>
               <text class="item-activity">{{row.fields.name}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
@@ -131,15 +133,37 @@
 
       <!-- ticket -->
       <block wx:if="{{activeCategory === 'ticket'}}">
-        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+        <view class="item-card list-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
           <view class="item-main" bindtap="editItem" data-item="{{row}}">
             <view class="item-row1">
               <text class="item-time">{{row.fields.couplePrice}}</text>
               <text class="item-activity">{{row.fields.project}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.singlePrice}}" class="meta-tag">单人 {{row.fields.singlePrice}}</text>
               <text wx:if="{{row.fields.bookingMethod}}" class="meta-tag">🎫 {{row.fields.bookingMethod}}</text>
+            </view>
+            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
+          </view>
+          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
+        </view>
+      </block>
+
+      <!-- transport（新增交通分区：机票/高铁等） -->
+      <block wx:if="{{activeCategory === 'transport'}}">
+        <view class="item-card list-card {{row.fields.bookingStatus === 'booked' ? 'is-booked' : ''}}" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
+          <view class="item-main" bindtap="editItem" data-item="{{row}}">
+            <view class="item-row1">
+              <text class="item-time">{{row.fields.type}}</text>
+              <text class="item-activity">{{row.fields.route}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
+            </view>
+            <view class="item-meta">
+              <text wx:if="{{row.fields.departure}}" class="meta-tag">🛫 {{row.fields.departure}}</text>
+              <text wx:if="{{row.fields.arrival}}" class="meta-tag">🛬 {{row.fields.arrival}}</text>
+              <text wx:if="{{row.fields.seat}}" class="meta-tag">🪑 {{row.fields.seat}}</text>
+              <text wx:if="{{row.fields.price}}" class="meta-tag">💰 {{row.fields.price}}</text>
             </view>
             <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
           </view>
@@ -198,6 +222,21 @@
           bindinput="onFieldInput"
           auto-height
         ></textarea>
+        <!-- 预订状态用 picker 选择，待订/已订 -->
+        <picker
+          wx:elif="{{item.type === 'booking'}}"
+          class="form-input booking-picker"
+          range="{{bookingOptions}}"
+          range-key="label"
+          value="{{item.value}}"
+          data-index="{{index}}"
+          data-key="{{item.key}}"
+          bindchange="onFieldInput"
+        >
+          <view class="booking-val {{item.value === 'booked' ? 'booked' : 'pending'}}">
+            {{item.value === 'booked' ? '✅ 已订' : '⬜ 待订'}}
+          </view>
+        </picker>
         <input
           wx:else
           class="form-input"

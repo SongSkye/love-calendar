@@ -6,14 +6,22 @@
 var util = require('../../utils/util');
 var app = getApp();
 
-// 6 个分区配置：key / 名称 / emoji / 字段定义（用于弹窗表单渲染）
+// 7 个分区配置：key / 名称 / emoji / 是否支持预订状态
+// transport 为新增交通分区（机票/高铁等）；bookingCats 标记需按预订状态排序置顶的分区
 var CATEGORIES = [
-  { key: 'itinerary', name: '行程', emoji: '🗺️' },
-  { key: 'lodging', name: '住宿', emoji: '🏨' },
-  { key: 'restaurant', name: '餐厅', emoji: '🍽️' },
-  { key: 'ticket', name: '门票', emoji: '🎫' },
-  { key: 'budget', name: '预算', emoji: '💰' },
-  { key: 'packing', name: '准备', emoji: '🎒' },
+  { key: 'itinerary', name: '行程', emoji: '🗺️', hasBooking: false },
+  { key: 'lodging', name: '住宿', emoji: '🏨', hasBooking: true },
+  { key: 'restaurant', name: '餐厅', emoji: '🍽️', hasBooking: true },
+  { key: 'ticket', name: '门票', emoji: '🎫', hasBooking: true },
+  { key: 'transport', name: '交通', emoji: '✈️', hasBooking: true },
+  { key: 'budget', name: '预算', emoji: '💰', hasBooking: false },
+  { key: 'packing', name: '准备', emoji: '🎒', hasBooking: false },
+];
+
+// 预订状态选项（hasBooking=true 的分区共用）
+var BOOKING_OPTIONS = [
+  { value: 'pending', label: '待订' },
+  { value: 'booked', label: '已订' },
 ];
 
 // 各分区弹窗表单字段配置：fieldKey / label / 类型(input/textarea)
@@ -33,6 +41,7 @@ var FIELD_CONFIG = {
     { key: 'hotel', label: '民宿/酒店', type: 'input', placeholder: '如 大理沐山汐·沽月酒店' },
     { key: 'price', label: '预算(双人/晚)', type: 'input', placeholder: '如 500-800 元' },
     { key: 'feature', label: '特色', type: 'input', placeholder: '如 古城内，闹中取静' },
+    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   restaurant: [
     { key: 'name', label: '餐厅名称', type: 'input', placeholder: '如 段公子餐厅' },
@@ -40,6 +49,7 @@ var FIELD_CONFIG = {
     { key: 'dishes', label: '推荐菜品/特色', type: 'input', placeholder: '如 云南特色菜、雕梅扣肉' },
     { key: 'perCapita', label: '人均(元)', type: 'input', placeholder: '如 约 80-120' },
     { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
+    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   ticket: [
     { key: 'project', label: '项目', type: 'input', placeholder: '如 苍山洗马潭大索道' },
@@ -47,6 +57,18 @@ var FIELD_CONFIG = {
     { key: 'couplePrice', label: '双人费用', type: 'input', placeholder: '如 600 元' },
     { key: 'bookingMethod', label: '预订方式', type: 'input', placeholder: '如 携程/美团提前订' },
     { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
+    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
+  ],
+  // 交通分区（新增）：机票/高铁/大巴等往返交通的结构化记录
+  transport: [
+    { key: 'type', label: '交通方式', type: 'input', placeholder: '如 飞机/高铁/大巴' },
+    { key: 'route', label: '航线/车次', type: 'input', placeholder: '如 洛阳→昆明 / MU5780' },
+    { key: 'departure', label: '出发时间', type: 'input', placeholder: '如 08-28 08:30' },
+    { key: 'arrival', label: '到达时间', type: 'input', placeholder: '如 08-28 11:00' },
+    { key: 'seat', label: '座位', type: 'input', placeholder: '如 23A/23B' },
+    { key: 'price', label: '价格', type: 'input', placeholder: '如 1280元/人' },
+    { key: 'remark', label: '备注', type: 'input', placeholder: '如 去程/返程' },
+    { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   budget: [
     { key: 'budgetCategory', label: '费用类别', type: 'input', placeholder: '如 往返交通' },
@@ -66,6 +88,7 @@ Page({
     trip: {},
     loading: true,
     categories: CATEGORIES,
+    bookingOptions: BOOKING_OPTIONS,
     activeCategory: 'itinerary',  // 当前选中 tab
     groupedItems: {},            // 按 category 分组的明细
     currentList: [],             // 当前 tab 的明细列表（渲染用）
@@ -174,7 +197,21 @@ Page({
         if (grouped[item.category]) grouped[item.category].push(item);
       });
 
-      // 4. itinerary 再按 day 分组（渲染时按天展示）
+      // 4. 有预订状态的分区（lodging/restaurant/ticket/transport）按「已订置顶」排序
+      //    booked 在前，pending/空 在后，组内保持原 sortOrder
+      CATEGORIES.forEach(function (c) {
+        if (c.hasBooking && grouped[c.key]) {
+          grouped[c.key].sort(function (a, b) {
+            var aBooked = a.fields && a.fields.bookingStatus === 'booked';
+            var bBooked = b.fields && b.fields.bookingStatus === 'booked';
+            if (aBooked && !bBooked) return -1;
+            if (!aBooked && bBooked) return 1;
+            return (a.sortOrder || 0) - (b.sortOrder || 0);
+          });
+        }
+      });
+
+      // 5. itinerary 再按 day 分组（渲染时按天展示）
       grouped.itinerary = this.groupItineraryByDay(grouped.itinerary);
 
       this.setData({ groupedItems: grouped });
@@ -237,6 +274,11 @@ Page({
       var maxDay = days.length > 0 ? days[days.length - 1].day : 0;
       formData.day = String(maxDay + 1);
     }
+    // 有预订状态的分区，新增时默认「待订」
+    var catConfig = CATEGORIES.find(function (c) { return c.key === category; });
+    if (catConfig && catConfig.hasBooking) {
+      formData.bookingStatus = 'pending';
+    }
     // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
     var editFields = FIELD_CONFIG[category].map(function (f) {
       return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: formData[f.key] || '' };
@@ -260,7 +302,14 @@ Page({
     var formData = {};
     // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
     var editFields = FIELD_CONFIG[category].map(function (f) {
-      var v = item.fields[f.key] != null ? String(item.fields[f.key]) : '';
+      var raw = item.fields[f.key];
+      var v;
+      if (f.type === 'booking') {
+        // booking 字段存的是 status 值（booked/pending），原样保留，不转 String 以免 'null'/'undefined'
+        v = raw || 'pending';
+      } else {
+        v = raw != null ? String(raw) : '';
+      }
       formData[f.key] = v;
       return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: v };
     });

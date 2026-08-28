@@ -332,6 +332,28 @@
   margin-top: 4rpx;
 }
 
+/* 预订状态角标（卡片右上角） */
+.booking-badge {
+  font-size: 20rpx;
+  padding: 4rpx 14rpx;
+  border-radius: 20rpx;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+.booking-badge.booked {
+  color: #FFFFFF;
+  background: #52C41A;
+}
+.booking-badge.pending {
+  color: #FA8C16;
+  background: #FFF7E6;
+}
+
+/* 已订卡片左侧加绿色竖条，置顶时一眼可见 */
+.item-card.is-booked {
+  border-left: 6rpx solid #52C41A;
+}
+
 .item-del {
   width: 64rpx;
   display: flex;
@@ -428,6 +450,26 @@
   color: #333;
   box-sizing: border-box;
   min-height: 40rpx;
+}
+
+/* 弹窗内预订状态选择器 */
+.booking-picker {
+  padding: 0;
+  background: transparent;
+}
+.booking-val {
+  display: inline-block;
+  padding: 12rpx 28rpx;
+  border-radius: 12rpx;
+  font-size: 26rpx;
+}
+.booking-val.booked {
+  color: #52C41A;
+  background: #F6FFED;
+}
+.booking-val.pending {
+  color: #FA8C16;
+  background: #FFF7E6;
 }
 
 .modal-actions {
