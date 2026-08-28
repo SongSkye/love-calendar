@@ -23,6 +23,14 @@ var BOOKING_OPTIONS = [
   { value: 'booked', label: '已订' },
 ];
 
+// 把预订状态 value（booked/pending）转成 BOOKING_OPTIONS 索引，供 picker 回填
+function bookingValueToIndex(value) {
+  for (var i = 0; i < BOOKING_OPTIONS.length; i++) {
+    if (BOOKING_OPTIONS[i].value === value) return i;
+  }
+  return 0; // 默认「待订」
+}
+
 // 各分区弹窗表单字段配置：fieldKey / label / 类型(input/textarea)
 var FIELD_CONFIG = {
   // 行程：景点/活动可填航班车次+时间，座位+预订状态结构化，价格写备注
@@ -279,7 +287,13 @@ Page({
     }
     // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
     var editFields = FIELD_CONFIG[category].map(function (f) {
-      return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: formData[f.key] || '' };
+      var val = formData[f.key] || '';
+      var field = { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: val };
+      // booking 字段额外存 valueIndex（picker 的 value 要索引而非字符串）
+      if (f.type === 'booking') {
+        field.valueIndex = bookingValueToIndex(val);
+      }
+      return field;
     });
     this.setData({
       showEditModal: true,
@@ -309,7 +323,11 @@ Page({
         v = raw != null ? String(raw) : '';
       }
       formData[f.key] = v;
-      return { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: v };
+      var field = { key: f.key, label: f.label, type: f.type, placeholder: f.placeholder, value: v };
+      if (f.type === 'booking') {
+        field.valueIndex = bookingValueToIndex(v);
+      }
+      return field;
     });
     this.setData({
       showEditModal: true,
@@ -322,6 +340,7 @@ Page({
 
   /**
    * 表单输入：同步更新 editFields[index].value 和 formData[key]
+   * 仅用于 input/textarea（bindinput），e.detail.value 是文本
    */
   onFieldInput: function (e) {
     var index = e.currentTarget.dataset.index;
@@ -329,6 +348,25 @@ Page({
     var value = e.detail.value;
     var editFields = this.data.editFields;
     editFields[index].value = value;
+    var formData = this.data.formData;
+    formData[key] = value;
+    this.setData({ editFields: editFields, formData: formData });
+  },
+
+  /**
+   * 预订状态 picker 选中：bindchange 的 e.detail.value 是选中项索引（0/1），
+   * 需转成实际 value（booked/pending）再存，否则存进去是数字导致显示异常
+   * 同时更新 valueIndex 供 picker 回填
+   */
+  onBookingChange: function (e) {
+    var index = e.currentTarget.dataset.index;
+    var key = e.currentTarget.dataset.key;
+    var idx = Number(e.detail.value);
+    var opt = this.data.bookingOptions[idx] || this.data.bookingOptions[0];
+    var value = opt.value;
+    var editFields = this.data.editFields;
+    editFields[index].value = value;
+    editFields[index].valueIndex = idx;
     var formData = this.data.formData;
     formData[key] = value;
     this.setData({ editFields: editFields, formData: formData });
