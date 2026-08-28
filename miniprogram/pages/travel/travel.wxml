@@ -35,18 +35,18 @@
       bindtap="goDetail"
       data-id="{{item._id}}"
     >
-      <!-- 封面图 -->
-      <view class="card-cover">
-        <image wx:if="{{item.coverImage}}" src="{{item.coverImage}}" mode="aspectFill" class="cover-img"></image>
-        <view wx:else class="cover-default">
-          <text class="cover-icon">✈️</text>
-        </view>
+      <!-- 封面图（无封面时不显示占位框，直接展示下方卡片信息） -->
+      <view class="card-cover" wx:if="{{item.coverImage}}">
+        <image src="{{item.coverImage}}" mode="aspectFill" class="cover-img"></image>
         <view class="cover-tag">{{item.travelType || '旅行'}}</view>
       </view>
 
       <view class="card-body">
         <view class="card-left">
-          <view class="card-title">{{item.title}}</view>
+          <view class="card-title">
+            <text class="title-text">{{item.title}}</text>
+            <text class="title-tag" wx:if="{{!item.coverImage && item.travelType}}">{{item.travelType}}</text>
+          </view>
           <view class="card-route">📍 {{item.departure}} → {{item.destination}}</view>
           <view class="card-date">📅 {{item.startDate}} ~ {{item.endDate}}</view>
         </view>

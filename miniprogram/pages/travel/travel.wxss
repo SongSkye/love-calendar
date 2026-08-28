@@ -320,9 +320,27 @@
   font-weight: bold;
   color: #333333;
   margin-bottom: 10rpx;
+  display: flex;
+  align-items: center;
+  gap: 12rpx;
+}
+
+.title-text {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+}
+
+/* 无封面时，类型标签跟在标题后 */
+.title-tag {
+  font-size: 20rpx;
+  color: #FF6B81;
+  background: rgba(255, 107, 129, 0.12);
+  padding: 4rpx 14rpx;
+  border-radius: 16rpx;
+  flex-shrink: 0;
 }
 
 .card-route {
