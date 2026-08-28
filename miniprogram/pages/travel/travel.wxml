@@ -1,5 +1,15 @@
 <!-- 旅行计划列表页 -->
 <view class="travel-page">
+  <!-- 出行准备入口（通用清单，所有旅行共用，点击查看/编辑） -->
+  <view class="packing-entry" bindtap="togglePacking">
+    <text class="packing-entry-emoji">🎒</text>
+    <view class="packing-entry-info">
+      <text class="packing-entry-title">出行准备</text>
+      <text class="packing-entry-desc">通用打包清单，点此查看 / 编辑</text>
+    </view>
+    <text class="packing-entry-arrow">›</text>
+  </view>
+
   <!-- 加载中 -->
   <view class="loading-box" wx:if="{{loading && trips.length === 0}}">
     <text>加载中...</text>
@@ -52,4 +62,47 @@
 
   <!-- 浮动新增按钮 -->
   <view class="fab" bindtap="addTrip" wx:if="{{trips.length > 0}}">+</view>
+</view>
+
+<!-- 出行准备清单弹窗（查看 + 编辑，双方共享同步） -->
+<view class="modal-mask" wx:if="{{showPackingModal}}" bindtap="closePacking">
+  <view class="modal-box packing-box-modal" catchtap="noop">
+    <view class="modal-title">🎒 出行准备</view>
+
+    <!-- 查看模式 -->
+    <block wx:if="{{!packingEditing}}">
+      <scroll-view scroll-y class="packing-scroll">
+        <view class="packing-cat" wx:for="{{packingList}}" wx:key="category" wx:for-item="cat" wx:for-index="catIdx">
+          <view class="packing-cat-title">{{cat.emoji}} {{cat.category}}</view>
+          <view class="packing-li" wx:for="{{cat.items}}" wx:key="*this" wx:for-item="li">· {{li}}</view>
+        </view>
+      </scroll-view>
+      <view class="modal-actions">
+        <button class="modal-btn cancel" bindtap="closePacking">关闭</button>
+        <button class="modal-btn confirm" bindtap="editPacking">✏️ 编辑</button>
+      </view>
+    </block>
+
+    <!-- 编辑模式 -->
+    <block wx:else>
+      <scroll-view scroll-y class="packing-scroll">
+        <view class="packing-cat" wx:for="{{packingDraft}}" wx:key="category" wx:for-item="cat" wx:for-index="catIdx">
+          <view class="packing-cat-head">
+            <input class="packing-cat-input" value="{{cat.category}}" data-cat="{{catIdx}}" bindinput="onPackingCategoryInput" placeholder="类别" />
+            <view class="packing-cat-del" catchtap="removePackingCategory" data-cat="{{catIdx}}">删</view>
+          </view>
+          <view class="packing-edit-li" wx:for="{{cat.items}}" wx:key="*this" wx:for-item="li" wx:for-index="idx">
+            <input class="packing-item-input" value="{{li}}" data-cat="{{catIdx}}" data-idx="{{idx}}" bindinput="onPackingItemInput" placeholder="物品" />
+            <view class="packing-item-del" catchtap="removePackingItem" data-cat="{{catIdx}}" data-idx="{{idx}}">×</view>
+          </view>
+          <view class="packing-add-item" catchtap="addPackingItem" data-cat="{{catIdx}}">+ 添加物品</view>
+        </view>
+        <view class="packing-add-cat" catchtap="addPackingCategory">+ 添加类别</view>
+      </scroll-view>
+      <view class="modal-actions">
+        <button class="modal-btn cancel" bindtap="cancelEditPacking">取消</button>
+        <button class="modal-btn confirm" bindtap="savePacking" loading="{{packingSaving}}">保存</button>
+      </view>
+    </block>
+  </view>
 </view>

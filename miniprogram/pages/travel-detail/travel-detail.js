@@ -1,11 +1,10 @@
 /**
- * 旅行详情页 - 基本信息 + 5 个 tab 分区明细 + 出行准备小框
+ * 旅行详情页 - 基本信息 + 5 个 tab 分区明细
  * 支持查看、弹窗内联编辑/新增/删除明细，编辑/删除旅行
- * 出行准备清单存 couples 集合 packingList 字段，双方共享同步
+ * 出行准备清单已移至旅行列表页（travel），此处不再展示
  * 模式照抄 anniversary-detail 的 loadDetail + gacha-collection 的 tab 切换
  */
 var util = require('../../utils/util');
-var packing = require('../../utils/travel-packing');
 var app = getApp();
 
 // 5 个分区配置：key / 名称 / emoji / 是否支持预订状态
@@ -79,10 +78,6 @@ Page({
     loading: true,
     categories: CATEGORIES,
     bookingOptions: BOOKING_OPTIONS,
-    packingList: [],                  // 出行准备清单（存 couples.packingList，双方共享）
-    showPackingModal: false,           // 准备清单弹窗
-    packingEditing: false,             // 准备清单编辑模式
-    packingSaving: false,
     activeCategory: 'itinerary',  // 当前选中 tab
     groupedItems: {},            // 按 category 分组的明细
     currentList: [],             // 当前 tab 的明细列表（渲染用）
@@ -115,28 +110,6 @@ Page({
       return;
     }
     this.loadDetail();
-    this.loadPackingList();
-  },
-
-  /**
-   * 加载出行准备清单（存 couples.packingList，双方共享）
-   * 首次没有时用 travel-packing.js 的默认清单初始化
-   */
-  async loadPackingList() {
-    var db = app.getDb();
-    var coupleId = app.globalData.coupleId;
-    if (!coupleId) return;
-    try {
-      var res = await db.collection('couples').doc(coupleId).get();
-      var list = res.data && res.data.packingList;
-      if (!list || list.length === 0) {
-        // 首次：用默认清单
-        list = packing.PACKING_LIST;
-      }
-      this.setData({ packingList: list });
-    } catch (err) {
-      console.error('加载准备清单失败:', err);
-    }
   },
 
   /**
@@ -357,113 +330,6 @@ Page({
    */
   closeEditModal: function () {
     this.setData({ showEditModal: false });
-  },
-
-  /**
-   * 打开 / 关闭出行准备清单弹窗
-   */
-  togglePacking: function () {
-    this.setData({ showPackingModal: !this.data.showPackingModal, packingEditing: false });
-  },
-
-  closePacking: function () {
-    this.setData({ showPackingModal: false, packingEditing: false });
-  },
-
-  /**
-   * 进入编辑模式（重新拉一份本地副本编辑，取消不影响原数据）
-   */
-  editPacking: function () {
-    var draft = JSON.parse(JSON.stringify(this.data.packingList));
-    this.setData({ packingEditing: true, packingDraft: draft });
-  },
-
-  cancelEditPacking: function () {
-    this.setData({ packingEditing: false, packingDraft: null });
-  },
-
-  onPackingItemInput: function (e) {
-    var catIdx = e.currentTarget.dataset.cat;
-    var idx = e.currentTarget.dataset.idx;
-    var draft = this.data.packingDraft;
-    draft[catIdx].items[idx] = e.detail.value;
-    this.setData({ packingDraft: draft });
-  },
-
-  onPackingCategoryInput: function (e) {
-    var catIdx = e.currentTarget.dataset.cat;
-    var draft = this.data.packingDraft;
-    draft[catIdx].category = e.detail.value;
-    this.setData({ packingDraft: draft });
-  },
-
-  addPackingItem: function (e) {
-    var catIdx = e.currentTarget.dataset.cat;
-    var draft = this.data.packingDraft;
-    draft[catIdx].items.push('');
-    this.setData({ packingDraft: draft });
-  },
-
-  removePackingItem: function (e) {
-    var catIdx = e.currentTarget.dataset.cat;
-    var idx = e.currentTarget.dataset.idx;
-    var draft = this.data.packingDraft;
-    draft[catIdx].items.splice(idx, 1);
-    this.setData({ packingDraft: draft });
-  },
-
-  addPackingCategory: function () {
-    var draft = this.data.packingDraft;
-    draft.push({ category: '新类别', emoji: '🎒', items: [''] });
-    this.setData({ packingDraft: draft });
-  },
-
-  removePackingCategory: function (e) {
-    var catIdx = e.currentTarget.dataset.cat;
-    var draft = this.data.packingDraft;
-    draft.splice(catIdx, 1);
-    this.setData({ packingDraft: draft });
-  },
-
-  /**
-   * 保存准备清单到 couples.packingList（走云函数，双方同步）
-   */
-  async savePacking() {
-    if (this.data.packingSaving) return;
-    var draft = this.data.packingDraft;
-    // 清洗：去掉空类别、空条目
-    var cleaned = draft
-      .filter(function (c) { return (c.category || '').trim() && c.items.length > 0; })
-      .map(function (c) {
-        return {
-          category: (c.category || '').trim(),
-          emoji: c.emoji || '🎒',
-          items: c.items.filter(function (it) { return (it || '').trim(); }).map(function (it) { return (it || '').trim(); }),
-        };
-      })
-      .filter(function (c) { return c.items.length > 0; });
-
-    this.setData({ packingSaving: true });
-    try {
-      var res = await wx.cloud.callFunction({
-        name: 'updateTripItem',
-        data: {
-          action: 'updatePackingList',
-          coupleId: app.globalData.coupleId,
-          data: { packingList: cleaned },
-        },
-      });
-      if (!res.result || !res.result.success) {
-        throw new Error(res.result ? res.result.message : '云函数返回异常');
-      }
-      this.setData({ packingList: cleaned, packingEditing: false, packingDraft: null });
-      wx.showToast({ title: '已保存', icon: 'success' });
-    } catch (err) {
-      console.error('保存准备清单失败:', err);
-      wx.showToast({ title: '保存失败', icon: 'none' });
-    } finally {
-      this.setData({ packingSaving: false });
-    }
   },
 
   noop: function () {},

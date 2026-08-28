@@ -5,12 +5,19 @@
  */
 var util = require('../../utils/util');
 var sample = require('../../utils/travel-sample');
+var packing = require('../../utils/travel-packing');
 var app = getApp();
 
 Page({
   data: {
     trips: [],
     loading: false,
+    // 出行准备清单（存 couples.packingList，双方共享，所有旅行共用一份）
+    packingList: [],
+    showPackingModal: false,
+    packingEditing: false,
+    packingSaving: false,
+    packingDraft: null,
   },
 
   onShow: function () {
@@ -27,6 +34,131 @@ Page({
       return;
     }
     this.loadTrips();
+    this.loadPackingList();
+  },
+
+  /**
+   * 加载出行准备清单（存 couples.packingList，双方共享）
+   * 首次没有时用 travel-packing.js 的默认清单初始化展示
+   */
+  async loadPackingList() {
+    var db = app.getDb();
+    var coupleId = app.globalData.coupleId;
+    if (!coupleId) return;
+    try {
+      var res = await db.collection('couples').doc(coupleId).get();
+      var list = res.data && res.data.packingList;
+      if (!list || list.length === 0) {
+        list = packing.PACKING_LIST;
+      }
+      this.setData({ packingList: list });
+    } catch (err) {
+      console.error('加载准备清单失败:', err);
+    }
+  },
+
+  // ===== 出行准备弹窗 =====
+  togglePacking: function () {
+    this.setData({ showPackingModal: !this.data.showPackingModal, packingEditing: false });
+  },
+
+  closePacking: function () {
+    this.setData({ showPackingModal: false, packingEditing: false });
+  },
+
+  noop: function () {},
+
+  editPacking: function () {
+    var draft = JSON.parse(JSON.stringify(this.data.packingList));
+    this.setData({ packingEditing: true, packingDraft: draft });
+  },
+
+  cancelEditPacking: function () {
+    this.setData({ packingEditing: false, packingDraft: null });
+  },
+
+  onPackingItemInput: function (e) {
+    var catIdx = e.currentTarget.dataset.cat;
+    var idx = e.currentTarget.dataset.idx;
+    var draft = this.data.packingDraft;
+    draft[catIdx].items[idx] = e.detail.value;
+    this.setData({ packingDraft: draft });
+  },
+
+  onPackingCategoryInput: function (e) {
+    var catIdx = e.currentTarget.dataset.cat;
+    var draft = this.data.packingDraft;
+    draft[catIdx].category = e.detail.value;
+    this.setData({ packingDraft: draft });
+  },
+
+  addPackingItem: function (e) {
+    var catIdx = e.currentTarget.dataset.cat;
+    var draft = this.data.packingDraft;
+    draft[catIdx].items.push('');
+    this.setData({ packingDraft: draft });
+  },
+
+  removePackingItem: function (e) {
+    var catIdx = e.currentTarget.dataset.cat;
+    var idx = e.currentTarget.dataset.idx;
+    var draft = this.data.packingDraft;
+    draft[catIdx].items.splice(idx, 1);
+    this.setData({ packingDraft: draft });
+  },
+
+  addPackingCategory: function () {
+    var draft = this.data.packingDraft;
+    draft.push({ category: '新类别', emoji: '🎒', items: [''] });
+    this.setData({ packingDraft: draft });
+  },
+
+  removePackingCategory: function (e) {
+    var catIdx = e.currentTarget.dataset.cat;
+    var draft = this.data.packingDraft;
+    draft.splice(catIdx, 1);
+    this.setData({ packingDraft: draft });
+  },
+
+  /**
+   * 保存准备清单到 couples.packingList（走云函数，双方同步）
+   */
+  async savePacking() {
+    if (this.data.packingSaving) return;
+    var draft = this.data.packingDraft;
+    // 清洗：去掉空类别、空条目
+    var cleaned = draft
+      .filter(function (c) { return (c.category || '').trim() && c.items.length > 0; })
+      .map(function (c) {
+        return {
+          category: (c.category || '').trim(),
+          emoji: c.emoji || '🎒',
+          items: c.items.filter(function (it) { return (it || '').trim(); }).map(function (it) { return (it || '').trim(); }),
+        };
+      })
+      .filter(function (c) { return c.items.length > 0; });
+
+    this.setData({ packingSaving: true });
+    try {
+      var res = await wx.cloud.callFunction({
+        name: 'updateTripItem',
+        data: {
+          action: 'updatePackingList',
+          coupleId: app.globalData.coupleId,
+          data: { packingList: cleaned },
+        },
+      });
+      if (!res.result || !res.result.success) {
+        throw new Error(res.result ? res.result.message : '云函数返回异常');
+      }
+      this.setData({ packingList: cleaned, packingEditing: false, packingDraft: null });
+      wx.showToast({ title: '已保存', icon: 'success' });
+    } catch (err) {
+      console.error('保存准备清单失败:', err);
+      wx.showToast({ title: '保存失败', icon: 'none' });
+    } finally {
+      this.setData({ packingSaving: false });
+    }
   },
 
   /**
