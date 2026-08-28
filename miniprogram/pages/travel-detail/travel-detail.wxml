@@ -171,20 +171,6 @@
         </view>
       </block>
 
-      <!-- budget -->
-      <block wx:if="{{activeCategory === 'budget'}}">
-        <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">
-          <view class="item-main" bindtap="editItem" data-item="{{row}}">
-            <view class="item-row1">
-              <text class="item-activity">{{row.fields.budgetCategory}}</text>
-              <text class="item-time">{{row.fields.amount}}</text>
-            </view>
-            <view class="item-remark" wx:if="{{row.fields.remark}}">{{row.fields.remark}}</view>
-          </view>
-          <view class="item-del" catchtap="deleteItem" data-item="{{row}}">×</view>
-        </view>
-      </block>
-
       <!-- packing -->
       <block wx:if="{{activeCategory === 'packing'}}">
         <view class="item-card list-card" wx:for="{{currentList}}" wx:key="_id" wx:for-item="row">

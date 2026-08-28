@@ -114,7 +114,7 @@ Page({
     var that = this;
     wx.showModal({
       title: '加载示例攻略',
-      content: '将导入「大理蜜月旅行攻略」完整内容（行程、住宿、门票、预算、准备），可在此基础上修改。是否继续？',
+      content: '将导入「大理蜜月旅行攻略」完整内容（行程、住宿、餐厅、门票、准备），可在此基础上修改。是否继续？',
       confirmText: '导入',
       confirmColor: '#FF6B81',
       success: async function (res) {

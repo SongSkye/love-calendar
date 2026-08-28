@@ -1,7 +1,7 @@
 /**
  * 旅行计划 - 大理蜜月攻略示例数据
- * 从「大理蜜月旅行攻略.xlsx」7 个 sheet 提取，用于「加载示例攻略」一键导入
- * 结构对应 trips 文档 + trip_items 明细行（category 区分 6 个分区）
+ * 从「大理蜜月旅行攻略.xlsx」提取，用于「加载示例攻略」一键导入
+ * 结构对应 trips 文档 + trip_items 明细行（category 区分分区）
  */
 
 // trips 文档基本信息（对应 Sheet1 行程总览）
@@ -105,15 +105,6 @@ var TRIP_ITEMS = [
   { category: 'ticket', sortOrder: 3, fields: { project: '南诏风情岛', singlePrice: '50 元', couplePrice: '100 元', bookingMethod: '现场购票', remark: '双廊玉几岛旁' } },
   { category: 'ticket', sortOrder: 4, fields: { project: '周城扎染体验', singlePrice: '80-150 元', couplePrice: '160-300 元', bookingMethod: '现场参加', remark: '含教学 + 布料' } },
   { category: 'ticket', sortOrder: 5, fields: { project: '洱海生态廊道骑行', singlePrice: '50-80 元', couplePrice: '80-160 元', bookingMethod: '现场租车', remark: '双人自行车 / 电动车' } },
-
-  // ===== budget 预算总览（Sheet6）=====
-  { category: 'budget', sortOrder: 0, fields: { budgetCategory: '往返交通（洛阳⇌大理）', amount: '5000-7000 元', remark: '机票 + 高铁，十一价格浮动大' } },
-  { category: 'budget', sortOrder: 1, fields: { budgetCategory: '当地交通（包车 + 打车）', amount: '1500-2000 元', remark: '环洱海包车为主' } },
-  { category: 'budget', sortOrder: 2, fields: { budgetCategory: '住宿（4 晚）', amount: '2500-5000 元', remark: '根据选择浮动' } },
-  { category: 'budget', sortOrder: 3, fields: { budgetCategory: '餐饮（5 天）', amount: '1500-2500 元', remark: '含特色餐厅' } },
-  { category: 'budget', sortOrder: 4, fields: { budgetCategory: '门票 + 体验', amount: '1000-1500 元', remark: '索道 + 扎染 + 骑行' } },
-  { category: 'budget', sortOrder: 5, fields: { budgetCategory: '其他（购物 + 零食）', amount: '500-1000 元', remark: '纪念品、鲜花饼等' } },
-  { category: 'budget', sortOrder: 6, fields: { budgetCategory: '合计', amount: '约 1.2 万 - 1.8 万', remark: '丰俭由人' } },
 
   // ===== packing 出行准备（Sheet7）=====
   { category: 'packing', sortOrder: 0, fields: { packCategory: '证件', item: '身份证、驾驶证', remark: '租车需要驾驶证' } },

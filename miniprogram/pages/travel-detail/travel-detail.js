@@ -6,15 +6,14 @@
 var util = require('../../utils/util');
 var app = getApp();
 
-// 7 个分区配置：key / 名称 / emoji / 是否支持预订状态
-// transport 为新增交通分区（机票/高铁等）；bookingCats 标记需按预订状态排序置顶的分区
+// 6 个分区配置：key / 名称 / emoji / 是否支持预订状态
+// transport 为交通分区（机票/高铁等）；bookingCats 标记需按预订状态排序置顶的分区
 var CATEGORIES = [
   { key: 'itinerary', name: '行程', emoji: '🗺️', hasBooking: false },
   { key: 'lodging', name: '住宿', emoji: '🏨', hasBooking: true },
   { key: 'restaurant', name: '餐厅', emoji: '🍽️', hasBooking: true },
   { key: 'ticket', name: '门票', emoji: '🎫', hasBooking: true },
   { key: 'transport', name: '交通', emoji: '✈️', hasBooking: true },
-  { key: 'budget', name: '预算', emoji: '💰', hasBooking: false },
   { key: 'packing', name: '准备', emoji: '🎒', hasBooking: false },
 ];
 
@@ -69,11 +68,6 @@ var FIELD_CONFIG = {
     { key: 'price', label: '价格', type: 'input', placeholder: '如 1280元/人' },
     { key: 'remark', label: '备注', type: 'input', placeholder: '如 去程/返程' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
-  ],
-  budget: [
-    { key: 'budgetCategory', label: '费用类别', type: 'input', placeholder: '如 往返交通' },
-    { key: 'amount', label: '预估金额(双人)', type: 'input', placeholder: '如 5000-7000 元' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
   ],
   packing: [
     { key: 'packCategory', label: '类别', type: 'input', placeholder: '如 证件' },
