@@ -38,27 +38,10 @@
     </view>
   </view>
 
-  <!-- 邀请码 -->
-  <view class="section">
-    <view class="section-title">🔗 邀请码</view>
-    <view class="invite-card card">
-      <view class="invite-code-row">
-        <view class="invite-code-show">{{inviteCode}}</view>
-        <view class="invite-copy-btn" bindtap="copyInviteCode">复制</view>
-      </view>
-      <view class="invite-tip">将邀请码发给TA，打开小程序即可加入</view>
-    </view>
-  </view>
-
   <!-- 设置 -->
   <view class="section">
     <view class="section-title">⚙️ 设置</view>
     <view class="menu-list card">
-      <view class="menu-item" bindtap="shareApp">
-        <text class="menu-icon">📤</text>
-        <text class="menu-text">分享给TA</text>
-        <text class="menu-arrow">›</text>
-      </view>
       <view class="menu-item" bindtap="goPhotos">
         <text class="menu-icon">📷</text>
         <text class="menu-text">照片墙</text>
@@ -77,6 +60,25 @@
       <view class="menu-item" bindtap="aboutApp">
         <text class="menu-icon">ℹ️</text>
         <text class="menu-text">关于恋爱日历</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 邀请码 + 分享（放最后，方便随时发给TA） -->
+  <view class="section">
+    <view class="section-title">🔗 邀请分享</view>
+    <view class="invite-card card">
+      <view class="invite-code-row">
+        <view class="invite-code-show">{{inviteCode}}</view>
+        <view class="invite-copy-btn" bindtap="copyInviteCode">复制</view>
+      </view>
+      <view class="invite-tip">将邀请码发给TA，打开小程序即可加入</view>
+    </view>
+    <view class="menu-list card">
+      <view class="menu-item" bindtap="shareApp">
+        <text class="menu-icon">📤</text>
+        <text class="menu-text">分享给TA</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>
