@@ -57,11 +57,6 @@
         <text class="menu-text">我们的图鉴</text>
         <text class="menu-arrow">›</text>
       </view>
-      <view class="menu-item" bindtap="aboutApp">
-        <text class="menu-icon">ℹ️</text>
-        <text class="menu-text">关于恋爱日历</text>
-        <text class="menu-arrow">›</text>
-      </view>
     </view>
   </view>
 
@@ -79,6 +74,17 @@
       <view class="menu-item" bindtap="shareApp">
         <text class="menu-icon">📤</text>
         <text class="menu-text">分享给TA</text>
+        <text class="menu-arrow">›</text>
+      </view>
+    </view>
+  </view>
+
+  <!-- 关于（不常用，放最底） -->
+  <view class="section">
+    <view class="menu-list card">
+      <view class="menu-item" bindtap="aboutApp">
+        <text class="menu-icon">ℹ️</text>
+        <text class="menu-text">关于恋爱日历</text>
         <text class="menu-arrow">›</text>
       </view>
     </view>
