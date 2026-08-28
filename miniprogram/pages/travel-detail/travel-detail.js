@@ -31,18 +31,18 @@ function bookingValueToIndex(value) {
   return 0; // 默认「待订」
 }
 
-// 各分区弹窗表单字段配置：fieldKey / label / 类型(input/textarea)
+// 各分区弹窗表单字段配置：fieldKey / label / 类型(input单行/textarea多行自适应)
 var FIELD_CONFIG = {
   // 行程：景点/活动可填航班车次+时间，座位+预订状态结构化，价格写备注
   itinerary: [
     { key: 'day', label: '第几天', type: 'input', placeholder: '如 1' },
     { key: 'timeSlot', label: '时段', type: 'input', placeholder: '如 早上' },
-    { key: 'activity', label: '景点/活动', type: 'input', placeholder: '如 漫步大理古城 / 洛阳✈昆明 MU5780 08:30-11:00' },
+    { key: 'activity', label: '景点/活动', type: 'textarea', placeholder: '如 漫步大理古城 / 洛阳✈昆明 MU5780 08:30-11:00' },
     { key: 'playDuration', label: '建议游玩', type: 'input', placeholder: '如 1.5-2h / 飞行2.5h' },
     { key: 'nextStop', label: '前往下一站', type: 'input', placeholder: '如 步行 / 机场→昆明南站' },
     { key: 'seat', label: '座位', type: 'input', placeholder: '如 23A/23B' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '如 1280元/人 去程' },
-    { key: 'lodgingNote', label: '当日住宿', type: 'input', placeholder: '当天住宿说明（可空）' },
+    { key: 'remark', label: '备注', type: 'textarea', placeholder: '如 1280元/人 去程' },
+    { key: 'lodgingNote', label: '当日住宿', type: 'textarea', placeholder: '当天住宿说明（可空）' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   lodging: [
@@ -50,15 +50,15 @@ var FIELD_CONFIG = {
     { key: 'area', label: '推荐区域', type: 'input', placeholder: '如 大理古城' },
     { key: 'hotel', label: '民宿/酒店', type: 'input', placeholder: '如 大理沐山汐·沽月酒店' },
     { key: 'price', label: '预算(双人/晚)', type: 'input', placeholder: '如 500-800 元' },
-    { key: 'feature', label: '特色', type: 'input', placeholder: '如 古城内，闹中取静' },
+    { key: 'feature', label: '特色', type: 'textarea', placeholder: '如 古城内，闹中取静' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   restaurant: [
     { key: 'name', label: '餐厅名称', type: 'input', placeholder: '如 段公子餐厅' },
     { key: 'area', label: '所在区域', type: 'input', placeholder: '如 大理古城（Day1）' },
-    { key: 'dishes', label: '推荐菜品/特色', type: 'input', placeholder: '如 云南特色菜、雕梅扣肉' },
+    { key: 'dishes', label: '推荐菜品/特色', type: 'textarea', placeholder: '如 云南特色菜、雕梅扣肉' },
     { key: 'perCapita', label: '人均(元)', type: 'input', placeholder: '如 约 80-120' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
+    { key: 'remark', label: '备注', type: 'textarea', placeholder: '备注信息' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
   ticket: [
@@ -66,7 +66,7 @@ var FIELD_CONFIG = {
     { key: 'singlePrice', label: '单人票价', type: 'input', placeholder: '如 300 元' },
     { key: 'couplePrice', label: '双人费用', type: 'input', placeholder: '如 600 元' },
     { key: 'bookingMethod', label: '预订方式', type: 'input', placeholder: '如 携程/美团提前订' },
-    { key: 'remark', label: '备注', type: 'input', placeholder: '备注信息' },
+    { key: 'remark', label: '备注', type: 'textarea', placeholder: '备注信息' },
     { key: 'bookingStatus', label: '预订状态', type: 'booking', placeholder: '' },
   ],
 };
