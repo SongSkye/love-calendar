@@ -186,10 +186,10 @@ Page({
         if (grouped[item.category]) grouped[item.category].push(item);
       });
 
-      // 4. 有预订状态的分区（lodging/restaurant/ticket/transport）按「已订置顶」排序
-      //    booked 在前，pending/空 在后，组内保持原 sortOrder
+      // 4. 住宿/餐厅/门票按「已订置顶」排序（booked 在前，pending/空 在后，组内保持 sortOrder）
+      //    行程（itinerary）不参与——行程按时间顺序排，已订置顶会打乱时间线
       CATEGORIES.forEach(function (c) {
-        if (c.hasBooking && grouped[c.key]) {
+        if (c.hasBooking && c.key !== 'itinerary' && grouped[c.key]) {
           grouped[c.key].sort(function (a, b) {
             var aBooked = a.fields && a.fields.bookingStatus === 'booked';
             var bBooked = b.fields && b.fields.bookingStatus === 'booked';
