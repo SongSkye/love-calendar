@@ -114,7 +114,10 @@
   font-weight: bold;
   color: #FF6B81;
   border-bottom: 2rpx solid #FFE4E8;
-  padding: 6rpx 0;
+  /* 固定高度行高，避免 input 文字靠下（同详情页 .form-input 处理） */
+  height: 60rpx;
+  line-height: 60rpx;
+  padding: 0;
 }
 .packing-cat-del {
   font-size: 22rpx;
@@ -136,7 +139,12 @@
   color: #333;
   background: #F9F9F9;
   border-radius: 12rpx;
-  padding: 12rpx 20rpx;
+  /* 固定高度行高，避免 input 文字靠下（同详情页 .form-input 处理） */
+  padding: 0 20rpx;
+  height: 72rpx;
+  line-height: 72rpx;
+  min-height: 72rpx;
+  box-sizing: border-box;
 }
 .packing-item-del {
   width: 44rpx;

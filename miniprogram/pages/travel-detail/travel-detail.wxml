@@ -73,7 +73,7 @@
       <block wx:if="{{activeCategory === 'itinerary'}}">
         <view class="day-group" wx:for="{{currentList}}" wx:key="day" wx:for-item="dayGroup">
           <view class="day-header">
-            <text class="day-badge">Day {{dayGroup.day}}</text>
+            <text class="day-badge">{{dayGroup.day ? 'Day ' + dayGroup.day : '未排期'}}</text>
             <text class="day-lodging" wx:if="{{dayGroup.items[0].fields.lodgingNote}}">🏨 {{dayGroup.items[0].fields.lodgingNote}}</text>
           </view>
           <view class="item-card" wx:for="{{dayGroup.items}}" wx:key="_id" wx:for-item="row">

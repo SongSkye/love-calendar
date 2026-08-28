@@ -8,7 +8,7 @@ var util = require('../../utils/util');
 var app = getApp();
 
 // 5 个分区配置：key / 名称 / emoji / 是否支持预订状态
-// 准备（packing）已移出 tab，改为详情页常驻小框（存 couples.packingList，双方共享）
+// 准备（packing）已移至旅行列表页（travel）的「🎒 出行准备」入口，存 couples.packingList 双方共享
 var CATEGORIES = [
   { key: 'itinerary', name: '行程', emoji: '🗺️', hasBooking: false },
   { key: 'lodging', name: '住宿', emoji: '🏨', hasBooking: true },
@@ -215,12 +215,20 @@ Page({
 
   /**
    * 将行程明细按 day 分组，返回 [{day, items}] 结构
+   * 没填 day 的归到「未排期」组（day 用 null 标记，渲染时显示"未排期"而非"Day 0"）
    */
   groupItineraryByDay: function (items) {
     var dayMap = {};
     var dayOrder = [];
+    var unsorted = []; // 没填 day 的行程
     items.forEach(function (item) {
-      var day = item.fields.day || 0;
+      var rawDay = item.fields.day;
+      var day = rawDay ? Number(rawDay) : 0;
+      if (!rawDay || isNaN(day) || day <= 0) {
+        // 没填天数或非法值，归到「未排期」组
+        unsorted.push(item);
+        return;
+      }
       if (!dayMap[day]) {
         dayMap[day] = [];
         dayOrder.push(day);
@@ -228,9 +236,14 @@ Page({
       dayMap[day].push(item);
     });
     dayOrder.sort(function (a, b) { return a - b; });
-    return dayOrder.map(function (day) {
+    var groups = dayOrder.map(function (day) {
       return { day: day, items: dayMap[day] };
     });
+    // 「未排期」组放最后
+    if (unsorted.length > 0) {
+      groups.push({ day: null, items: unsorted });
+    }
+    return groups;
   },
 
   /**
@@ -260,7 +273,11 @@ Page({
     var formData = {};
     if (category === 'itinerary') {
       var days = this.data.groupedItems.itinerary || [];
-      var maxDay = days.length > 0 ? days[days.length - 1].day : 0;
+      // 找最大的有效 day（排除「未排期」组 day=null）
+      var maxDay = 0;
+      days.forEach(function (g) {
+        if (g.day && g.day > maxDay) maxDay = g.day;
+      });
       formData.day = String(maxDay + 1);
     }
     // 有预订状态的分区，新增时默认「待订」

@@ -1,7 +1,8 @@
 /**
- * 旅行计划 - 通用出行准备清单（全局共享，所有旅行共用）
- * 纯提示信息，不存数据库、不勾选状态
- * 详情页「🎒 出行准备」小框点击后弹窗展示
+ * 旅行计划 - 通用出行准备清单默认数据（全局共享，所有旅行共用一份）
+ * 存 couples.packingList 字段，走 updateTripItem 云函数 admin 权限写入，双方同步
+ * 首次进入列表页时若 couples.packingList 为空，用本默认清单初始化展示
+ * 用户可在列表页「🎒 出行准备」入口编辑，保存后覆盖 couples.packingList
  *
  * 结构：[{ category, emoji, items: [String] }]
  */

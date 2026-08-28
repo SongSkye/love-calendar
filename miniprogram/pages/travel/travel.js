@@ -170,10 +170,23 @@ Page({
     var coupleId = app.globalData.coupleId;
 
     try {
-      var res = await db.collection('trips')
-        .where({ coupleId: coupleId })
-        .orderBy('startDate', 'desc')
-        .get();
+      // 云数据库 get 默认只返 20 条，旅行多了会丢，分页循环取全部（同详情页 loadDetail 模式）
+      var allTrips = [];
+      var pageSize = 20;
+      var skip = 0;
+      while (true) {
+        var pageRes = await db.collection('trips')
+          .where({ coupleId: coupleId })
+          .orderBy('startDate', 'desc')
+          .skip(skip)
+          .limit(pageSize)
+          .get();
+        allTrips = allTrips.concat(pageRes.data);
+        if (pageRes.data.length < pageSize) break;
+        skip += pageSize;
+        if (skip > 500) break; // 安全上限，避免异常死循环
+      }
+      var res = { data: allTrips };
 
       var today = util.getToday();
       var list = res.data.map(function (item) {
