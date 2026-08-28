@@ -81,7 +81,7 @@
               <view class="item-row1">
                 <text class="item-time">{{row.fields.timeSlot}}</text>
                 <text class="item-activity">{{row.fields.activity}}</text>
-                <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
+                <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}" catchtap="tapBooking" data-item="{{row}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
               </view>
               <view class="item-meta">
                 <text wx:if="{{row.fields.playDuration}}" class="meta-tag">⏱ {{row.fields.playDuration}}</text>
@@ -102,7 +102,7 @@
             <view class="item-row1">
               <text class="item-time">{{row.fields.date}}</text>
               <text class="item-activity">{{row.fields.hotel}}</text>
-              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}" catchtap="tapBooking" data-item="{{row}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
@@ -121,7 +121,7 @@
             <view class="item-row1">
               <text class="item-time">{{row.fields.perCapita}}</text>
               <text class="item-activity">{{row.fields.name}}</text>
-              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}" catchtap="tapBooking" data-item="{{row}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.area}}" class="meta-tag">📍 {{row.fields.area}}</text>
@@ -140,7 +140,7 @@
             <view class="item-row1">
               <text class="item-time">{{row.fields.couplePrice}}</text>
               <text class="item-activity">{{row.fields.project}}</text>
-              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
+              <text class="booking-badge {{row.fields.bookingStatus === 'booked' ? 'booked' : 'pending'}}" wx:if="{{row.fields.bookingStatus}}" catchtap="tapBooking" data-item="{{row}}">{{row.fields.bookingStatus === 'booked' ? '已订' : '待订'}}</text>
             </view>
             <view class="item-meta">
               <text wx:if="{{row.fields.singlePrice}}" class="meta-tag">单人 {{row.fields.singlePrice}}</text>
@@ -205,5 +205,25 @@
       <button class="modal-btn cancel" bindtap="closeEditModal">取消</button>
       <button class="modal-btn confirm" bindtap="saveItem" loading="{{saving}}">保存</button>
     </view>
+  </view>
+</view>
+
+<!-- 预订状态切换小弹窗（点卡片角标直出，不进编辑弹窗） -->
+<view class="modal-mask" wx:if="{{showBookingSelect}}" bindtap="closeBookingSelect">
+  <view class="booking-select-box" catchtap="noop">
+    <view class="booking-select-title">预订状态</view>
+    <view class="booking-select-opt {{bookingSelectItem.fields.bookingStatus === 'booked' ? 'on booked' : ''}}" catchtap="chooseBooking" data-val="booked">
+      <text class="booking-opt-icon">✅</text>
+      <text class="booking-opt-text">已订</text>
+    </view>
+    <view class="booking-select-opt {{bookingSelectItem.fields.bookingStatus === 'pending' ? 'on pending' : ''}}" catchtap="chooseBooking" data-val="pending">
+      <text class="booking-opt-icon">⬜</text>
+      <text class="booking-opt-text">待订</text>
+    </view>
+    <view class="booking-select-opt" catchtap="chooseBooking" data-val="">
+      <text class="booking-opt-icon">🚫</text>
+      <text class="booking-opt-text">不设</text>
+    </view>
+    <view class="booking-select-cancel" catchtap="closeBookingSelect">取消</view>
   </view>
 </view>

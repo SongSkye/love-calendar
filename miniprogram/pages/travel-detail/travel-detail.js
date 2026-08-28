@@ -88,6 +88,9 @@ Page({
     editingItem: null,           // null=新增，对象=编辑
     formData: {},                 // 弹窗表单数据
     saving: false,
+    // 预订状态切换小弹窗（点卡片角标直出）
+    showBookingSelect: false,
+    bookingSelectItem: null,      // 当前切换预订状态的明细
   },
 
   onLoad: function (options) {
@@ -491,6 +494,63 @@ Page({
           console.error('删除明细失败:', err);
           wx.showToast({ title: '删除失败', icon: 'none' });
         }
+      },
+    });
+  },
+
+  /**
+   * 点卡片角标 → 打开预订状态切换小弹窗
+   * catchtap 阻止冒泡到 editItem，只切预订状态不进编辑弹窗
+   */
+  tapBooking: function (e) {
+    var item = e.currentTarget.dataset.item;
+    this.setData({ showBookingSelect: true, bookingSelectItem: item });
+  },
+
+  closeBookingSelect: function () {
+    this.setData({ showBookingSelect: false, bookingSelectItem: null });
+  },
+
+  /**
+   * 选预订状态：booked / pending / ''(不设，清空)
+   * 走云函数 update 只改 fields.bookingStatus，刷新当前列表
+   */
+  chooseBooking: function (e) {
+    var that = this;
+    var val = e.currentTarget.dataset.val;
+    var item = this.data.bookingSelectItem;
+    if (!item) return;
+    // 没变化直接关
+    var cur = item.fields && item.fields.bookingStatus;
+    if (cur === val || (!cur && val === '')) {
+      this.closeBookingSelect();
+      return;
+    }
+    // 构造新 fields：清空时删除该字段，否则设值
+    var newFields = Object.assign({}, item.fields);
+    if (val === '') {
+      delete newFields.bookingStatus;
+    } else {
+      newFields.bookingStatus = val;
+    }
+    wx.showLoading({ title: '更新中...', mask: true });
+    wx.cloud.callFunction({
+      name: 'updateTripItem',
+      data: { action: 'update', id: item._id, data: { fields: newFields } },
+      success: function (res) {
+        wx.hideLoading();
+        if (!res.result || !res.result.success) {
+          wx.showToast({ title: res.result ? res.result.message : '更新失败', icon: 'none' });
+          return;
+        }
+        that.setData({ showBookingSelect: false, bookingSelectItem: null });
+        wx.showToast({ title: '已更新', icon: 'success' });
+        that.loadDetail();
+      },
+      fail: function (err) {
+        wx.hideLoading();
+        console.error('更新预订状态失败:', err);
+        wx.showToast({ title: '更新失败', icon: 'none' });
       },
     });
   },

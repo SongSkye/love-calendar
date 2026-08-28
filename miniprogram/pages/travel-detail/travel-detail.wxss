@@ -512,3 +512,56 @@ textarea.form-input {
   color: #FF6B81;
   font-weight: bold;
 }
+
+/* 预订状态切换小弹窗（点卡片角标直出，底部轻量弹窗） */
+.booking-select-box {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: #FFFFFF;
+  border-radius: 24rpx 24rpx 0 0;
+  padding: 20rpx 30rpx calc(20rpx + env(safe-area-inset-bottom));
+}
+
+.booking-select-title {
+  text-align: center;
+  font-size: 26rpx;
+  color: #999;
+  padding: 8rpx 0 20rpx;
+}
+
+.booking-select-opt {
+  display: flex;
+  align-items: center;
+  gap: 16rpx;
+  padding: 26rpx 20rpx;
+  border-radius: 16rpx;
+  margin-bottom: 12rpx;
+  background: #F9F9F9;
+  font-size: 30rpx;
+  color: #333;
+}
+
+.booking-select-opt.on.booked {
+  background: #F6FFED;
+  color: #52C41A;
+  font-weight: bold;
+}
+
+.booking-select-opt.on.pending {
+  background: #FFF7E6;
+  color: #FA8C16;
+  font-weight: bold;
+}
+
+.booking-opt-icon {
+  font-size: 32rpx;
+}
+
+.booking-select-cancel {
+  text-align: center;
+  padding: 24rpx 0 8rpx;
+  font-size: 30rpx;
+  color: #999;
+}
