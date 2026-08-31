@@ -166,18 +166,10 @@ Page({
         // 搜索模式：用正则搜索（标题或内容），后端分页
         var regexp = db.RegExp({ regexp: keyword, options: 'i' });
 
-        // 并行查询标题和内容匹配
+        // 并行查询标题和内容匹配（分页取全部，默认 .get() 只返 20 条，日记多了搜索结果会丢）
         var [titleRes, contentRes] = await Promise.all([
-          db.collection('diaries')
-            .where({ coupleId: coupleId, title: regexp })
-            .orderBy('date', 'desc')
-            .orderBy('createdAt', 'desc')
-            .get(),
-          db.collection('diaries')
-            .where({ coupleId: coupleId, content: regexp })
-            .orderBy('date', 'desc')
-            .orderBy('createdAt', 'desc')
-            .get()
+          util.fetchAll(db, 'diaries', { coupleId: coupleId, title: regexp }, 'date', 'desc'),
+          util.fetchAll(db, 'diaries', { coupleId: coupleId, content: regexp }, 'date', 'desc')
         ]);
 
         // 合并去重
@@ -331,11 +323,8 @@ Page({
     var diaryIds = diaries.map(function (d) { return d._id; });
 
     try {
-      // 一次查询所有相关评论
-      var commentRes = await db.collection('comments')
-        .where({ diaryId: _.in(diaryIds) })
-        .orderBy('createdAt', 'asc')
-        .get();
+      // 一次查询所有相关评论（分页取全部，默认 .get() 只返 20 条，评论多了会丢）
+      var commentRes = await util.fetchAll(db, 'comments', { diaryId: _.in(diaryIds) }, 'createdAt', 'asc');
 
       var myUid = app.getUserId();
       var userMap = userMapCache || await this.getUserMap();
@@ -343,7 +332,7 @@ Page({
       // 按 diaryId 分组，附带用户信息
       var map = this.data.commentsMap || {};
       diaryIds.forEach(function (id) { if (!map[id]) map[id] = []; });
-      commentRes.data.forEach(function (c) {
+      commentRes.forEach(function (c) {
         if (map[c.diaryId]) {
           // 优先用系统注入的 _openid 匹配，兼容历史 uid/openid 字段
           var commentUserId = c._openid || c.uid || c.openid;
@@ -608,14 +597,11 @@ Page({
     this.setData({ detailCommentLoading: true });
     var db = app.getDb();
     try {
-      var commentRes = await db.collection('comments')
-        .where({ diaryId: diaryId })
-        .orderBy('createdAt', 'asc')
-        .get();
+      var commentRes = await util.fetchAll(db, 'comments', { diaryId: diaryId }, 'createdAt', 'asc');
 
       var userMap = userMapCache || await this.getUserMap();
       var myUid = app.getUserId();
-      var comments = commentRes.data.map(function (c) {
+      var comments = commentRes.map(function (c) {
         // 优先用系统注入的 _openid 匹配，兼容历史 uid/openid 字段
         var commentUserId = c._openid || c.uid || c.openid;
         var u = userMap[commentUserId] || { nickname: '未知', role: '', avatar: '' };

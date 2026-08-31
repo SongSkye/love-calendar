@@ -6,6 +6,27 @@ const cloud = require('wx-server-sdk');
 cloud.init({ env: cloud.DYNAMIC_CURRENT_ENV });
 const db = cloud.database();
 
+/**
+ * 分页删除集合中符合条件的全部记录
+ * where().remove() 单次最多删 20 条，数据多了会漏删，此函数先分页取全部再逐条 doc.remove
+ */
+async function removeAll(coll, where) {
+  var all = [];
+  var pageSize = 20;
+  var skip = 0;
+  while (true) {
+    var res = await db.collection(coll).where(where).skip(skip).limit(pageSize).get();
+    all = all.concat(res.data);
+    if (res.data.length < pageSize) break;
+    skip += pageSize;
+    if (skip > 1000) break; // 安全上限
+  }
+  for (var i = 0; i < all.length; i++) {
+    await db.collection(coll).doc(all[i]._id).remove();
+  }
+  return all.length;
+}
+
 exports.main = async (event, context) => {
   const { action } = event;
   const { OPENID } = cloud.getWXContext();
@@ -106,16 +127,15 @@ exports.main = async (event, context) => {
 
         // 如果是 creator 解绑，清空整个空间（包括所有数据）
         if (user.role === 'creator') {
-          // 删除该空间的所有数据
-          await db.collection('moods').where({ coupleId: coupleId }).remove();
-          await db.collection('diaries').where({ coupleId: coupleId }).remove();
-          await db.collection('anniversaries').where({ coupleId: coupleId }).remove();
+          // 删除该空间的所有数据（分页删，避免 where().remove() 单次 20 条上限漏删）
+          await removeAll('moods', { coupleId: coupleId });
+          await removeAll('diaries', { coupleId: coupleId });
+          await removeAll('anniversary_records', { coupleId: coupleId });
+          await removeAll('anniversaries', { coupleId: coupleId });
 
-          // 删除 partner 的用户记录
+          // 删除 partner 的用户记录（按 openid 精确删，最多 1 条，可直接 remove）
           if (couple.partnerOpenid) {
-            await db.collection('users')
-              .where({ openid: couple.partnerOpenid, coupleId: coupleId })
-              .remove();
+            await removeAll('users', { openid: couple.partnerOpenid, coupleId: coupleId });
           }
 
           // 删除空间

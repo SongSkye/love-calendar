@@ -174,10 +174,8 @@ Page({
       var anniCache = app.globalData.anniversariesCache;
       if (!anniCache || anniCache.length === 0) {
         try {
-          anniCache = (await db.collection('anniversaries')
-            .where({ coupleId: coupleId })
-            .orderBy('date', 'asc')
-            .get()).data;
+          // 分页取全部（默认 .get() 只返 20 条，纪念日多了会丢）
+          anniCache = await util.fetchAll(db, 'anniversaries', { coupleId: coupleId }, 'date', 'asc');
           app.globalData.anniversariesCache = anniCache;
         } catch (e) { anniCache = []; }
       }
@@ -197,11 +195,11 @@ Page({
       }
 
       // 3. 只查一次 moods 表（全部数据），同时用于月历展示和统计
+      // 分页取全部（默认 .get() 只返 20 条，用几个月就会超，月历点会丢）
       const { currentYear, currentMonth } = this.data;
       const month = currentYear + '-' + String(currentMonth).padStart(2, '0');
 
-      const moodsRes = await db.collection('moods').where({ coupleId: coupleId }).get();
-      const allMoods = moodsRes.data;
+      const allMoods = await util.fetchAll(db, 'moods', { coupleId: coupleId });
       this.data.allMoodsCache = allMoods;
 
       // 从全部 moods 中过滤当月数据，生成 moodMap

@@ -14,10 +14,17 @@ exports.main = async (event, context) => {
   }
 
   try {
-    const res = await cloud.getTempFileURL({ fileList: fileList });
+    // cloud.getTempFileURL 单次最多 50 个 fileID，超了会报错，分批处理
+    var allResults = [];
+    var batchSize = 50;
+    for (var i = 0; i < fileList.length; i += batchSize) {
+      var batch = fileList.slice(i, i + batchSize);
+      var batchRes = await cloud.getTempFileURL({ fileList: batch });
+      allResults = allResults.concat(batchRes.fileList);
+    }
     return {
       success: true,
-      data: res.fileList.map(function (f) {
+      data: allResults.map(function (f) {
         return { fileID: f.fileID, tempFileURL: f.tempFileURL || '', status: f.status };
       }),
     };

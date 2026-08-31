@@ -191,15 +191,22 @@ Page({
             if (coverFileId) {
               wx.cloud.deleteFile({ fileList: [coverFileId] }).catch(function () {});
             }
-            // 删除历史记录中的图片
-            var recordsRes = await db.collection('anniversary_records').where({ anniversaryId: id }).get();
-            recordsRes.data.forEach(function (item) {
+            // 删除历史记录中的图片 + 记录本身
+            // 分页取全部 records（默认 .get() 只返 20 条，>20 会漏删图片和记录）
+            var allRecords = await util.fetchAll(db, 'anniversary_records', { anniversaryId: id });
+            var imageFileIds = [];
+            allRecords.forEach(function (item) {
               if (item.images && item.images.length > 0) {
-                wx.cloud.deleteFile({ fileList: item.images }).catch(function () {});
+                imageFileIds = imageFileIds.concat(item.images);
               }
             });
-            // 删除记录和纪念日
-            await db.collection('anniversary_records').where({ anniversaryId: id }).remove();
+            if (imageFileIds.length > 0) {
+              wx.cloud.deleteFile({ fileList: imageFileIds }).catch(function () {});
+            }
+            // 逐条删除记录（where().remove() 单次最多删 20 条，多了漏删）
+            for (var i = 0; i < allRecords.length; i++) {
+              await db.collection('anniversary_records').doc(allRecords[i]._id).remove();
+            }
             await db.collection('anniversaries').doc(id).remove();
             // 清除纪念日缓存，确保日历页和列表页重新加载
             app.globalData.anniversariesCache = null;

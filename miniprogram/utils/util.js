@@ -366,11 +366,16 @@ async function convertCloudFileIDs(fileIds) {
     // 第一层：从 image_thumbs 集合查 base64 缩略图
     var db = app.getDb();
     var _ = db.command;
-    var thumbRes = await db.collection('image_thumbs')
-      .where({ fileID: _.in(missIds) })
-      .get();
+    // _.in 数组过长会报错，分批查；每批再分页取全部（默认 .get() 只返 20 条）
+    var allThumbs = [];
+    var batchSize = 50;
+    for (var b = 0; b < missIds.length; b += batchSize) {
+      var batchIds = missIds.slice(b, b + batchSize);
+      var batchThumbs = await fetchAll(db, 'image_thumbs', { fileID: _.in(batchIds) });
+      allThumbs = allThumbs.concat(batchThumbs);
+    }
 
-    thumbRes.data.forEach(function (item) {
+    allThumbs.forEach(function (item) {
       if (item.base64) {
         map[item.fileID] = item.base64;
         imageUrlCache[item.fileID] = item.base64;  // 写入缓存
@@ -609,6 +614,48 @@ function getRarityConfig(rarity) {
   return configs[rarity] || configs[1];
 }
 
+/**
+ * 分页取出集合中符合条件的全部记录
+ * 云数据库 .get() 默认只返 20 条，数据多了会丢，此函数循环分页取全部
+ * @param {object} db - wx.cloud.database() 实例
+ * @param {string} coll - 集合名
+ * @param {object} where - 查询条件
+ * @param {string} [orderField] - 排序字段（可选）
+ * @param {string} [orderDir='asc'] - 排序方向
+ * @returns {Promise<Array>} 全部记录数组
+ */
+async function fetchAll(db, coll, where, orderField, orderDir) {
+  var all = [];
+  var pageSize = 20;
+  var skip = 0;
+  while (true) {
+    var q = db.collection(coll).where(where);
+    if (orderField) q = q.orderBy(orderField, orderDir || 'asc');
+    var res = await q.skip(skip).limit(pageSize).get();
+    all = all.concat(res.data);
+    if (res.data.length < pageSize) break;
+    skip += pageSize;
+    if (skip > 1000) break; // 安全上限，避免异常死循环
+  }
+  return all;
+}
+
+/**
+ * 分页删除集合中符合条件的全部记录
+ * where().remove() 单次最多删 20 条，数据多了会漏删，此函数先分页取全部再逐条 doc.remove
+ * @param {object} db - wx.cloud.database() 实例
+ * @param {string} coll - 集合名
+ * @param {object} where - 查询条件
+ * @returns {Promise<number>} 实际删除条数
+ */
+async function removeAll(db, coll, where) {
+  var all = await fetchAll(db, coll, where);
+  for (var i = 0; i < all.length; i++) {
+    await db.collection(coll).doc(all[i]._id).remove();
+  }
+  return all.length;
+}
+
 module.exports = {
   formatDate,
   getToday,
@@ -634,4 +681,6 @@ module.exports = {
   getGachaSets,
   drawGachaCard,
   getRarityConfig,
+  fetchAll,
+  removeAll,
 };

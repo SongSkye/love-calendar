@@ -52,12 +52,11 @@ Page({
     var db = app.getDb();
 
     // 查询双方收集的卡片（两人所有记录一起查）
+    // 分页取全部（默认 .get() 只返 20 条，累计抽卡超 20 次图鉴进度会少算）
     var collectedCardIds = [];
     try {
-      var allRes = await db.collection('gacha_records').where({
-        coupleId: coupleId
-      }).get();
-      allRes.data.forEach(function (r) {
+      var allRes = await util.fetchAll(db, 'gacha_records', { coupleId: coupleId });
+      allRes.forEach(function (r) {
         if (collectedCardIds.indexOf(r.cardId) === -1) {
           collectedCardIds.push(r.cardId);
         }

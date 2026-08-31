@@ -310,11 +310,12 @@ Page({
 
               if (userInfo.role === 'creator') {
                 // 创建者解绑：删除所有数据
-                await db.collection('moods').where({ coupleId: coupleId }).remove();
-                await db.collection('diaries').where({ coupleId: coupleId }).remove();
-                await db.collection('anniversary_records').where({ coupleId: coupleId }).remove();
-                await db.collection('anniversaries').where({ coupleId: coupleId }).remove();
-                await db.collection('users').where({ coupleId: coupleId }).remove();
+                // where().remove() 单次最多删 20 条，数据多了会漏删，用 util.removeAll 分页取全部再逐条删
+                await util.removeAll(db, 'moods', { coupleId: coupleId });
+                await util.removeAll(db, 'diaries', { coupleId: coupleId });
+                await util.removeAll(db, 'anniversary_records', { coupleId: coupleId });
+                await util.removeAll(db, 'anniversaries', { coupleId: coupleId });
+                await util.removeAll(db, 'users', { coupleId: coupleId });
                 await db.collection('couples').doc(coupleId).remove();
               } else {
                 // partner 解绑：删除用户记录，清空 partnerOpenid

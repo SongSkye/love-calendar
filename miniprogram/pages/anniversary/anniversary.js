@@ -32,15 +32,13 @@ Page({
     const coupleId = app.globalData.coupleId;
 
     try {
-      const res = await db.collection('anniversaries')
-        .where({ coupleId: coupleId })
-        .orderBy('date', 'asc')
-        .get();
+      // 分页取全部（默认 .get() 只返 20 条，纪念日多了会丢）
+      const res = await util.fetchAll(db, 'anniversaries', { coupleId: coupleId }, 'date', 'asc');
 
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      const list = res.data.map(function (item) {
+      const list = res.map(function (item) {
         const d = new Date(item.date);
         // 从纪念日到今天的总天数
         const diffTime = today.getTime() - d.getTime();
