@@ -212,17 +212,9 @@ App({
       if (res.data.length > 0) {
         return app.setupUserState(res.data[0]);
       }
-      return db.collection('users').get().then(function (fallbackRes) {
-        if (fallbackRes.data.length > 0) {
-          var user = fallbackRes.data[0];
-          console.log('通过权限兜底找回用户记录，更新 UUID');
-          db.collection('users').doc(user._id).update({
-            data: { uid: uid }
-          }).catch(function () {});
-          return app.setupUserState(user);
-        }
-        return false;
-      });
+      // 查不到 uid 即未绑定，不再全量 get() 兜底取第一条
+      // （旧逻辑会取到别人的记录导致跨用户数据错配，UUID 模式数据归属本就不可靠）
+      return false;
     }).catch(function (err) {
       console.error('检查绑定状态失败:', err);
       return false;

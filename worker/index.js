@@ -5,22 +5,27 @@
  *
  * 部署步骤：
  * 1. 打开 https://dash.cloudflare.com → Workers & Pages → 创建 Worker
- * 2. 把下面代码粘贴进去
- * 3. 修改 APPID 和 SECRET
+ * 2. 把下面代码粘贴进去（或用 wrangler deploy）
+ * 3. 配置 secret：在 worker 目录执行
+ *    - npx wrangler secret put APP_SECRET  （粘贴微信 AppSecret）
+ *    - npx wrangler secret put API_TOKEN    （自定义 token，小程序端也要配同一个）
  * 4. 点击"部署"
  * 5. 记下 Worker URL（如 https://love-calendar.你的账户.workers.dev）
  *
  * 免费额度：10 万次/天，远超小程序用量
  */
 
-// 微信小程序 AppID（你的小程序）
+// 微信小程序 AppID（非敏感，可硬编码）
 const APPID = 'wx58f20f88ad0c27c7';
 
-// 微信小程序 AppSecret（从 mp.weixin.qq.com → 开发 → 开发管理 → 开发设置 获取）
-const SECRET = '82090c79045c0228cbc5c2a728ff6902';
+// 微信小程序 AppSecret（敏感，通过 wrangler secret put APP_SECRET 配置，不在源码里）
+const SECRET = globalThis.APP_SECRET || '';
 
 // 云开发环境 ID
 const CLOUD_ENV = 'cloudbase-d2gr49l7r2f948ed1';
+
+// getTempUrls 端点鉴权 token（通过 wrangler secret put API_TOKEN 配置）
+const API_TOKEN = globalThis.API_TOKEN || '';
 
 // 缓存 access_token（有效期 7200 秒，提前 300 秒刷新）
 let accessTokenCache = { token: '', expireAt: 0 };
@@ -65,7 +70,15 @@ export default {
     }
 
     // 获取云存储临时下载链接（应用级鉴权，绕过免费版存储权限限制）
+    // 需带 Authorization: Bearer <API_TOKEN> 头，防止外部刷量消耗 access_token 配额
     if (url.pathname === '/api/getTempUrls' && request.method === 'POST') {
+      // 鉴权：校验 Bearer token
+      const authHeader = request.headers.get('Authorization') || '';
+      const token = authHeader.replace(/^Bearer\s+/i, '');
+      if (!API_TOKEN || token !== API_TOKEN) {
+        return json({ success: false, message: '未授权', data: [] }, 401);
+      }
+
       try {
         const { fileList } = await request.json();
         if (!fileList || !Array.isArray(fileList) || fileList.length === 0) {
@@ -78,29 +91,34 @@ export default {
           return json({ success: false, message: '获取 access_token 失败', data: [] }, 500);
         }
 
-        // 调用云开发 HTTP API 获取下载链接
-        const tcbResp = await fetch(
-          `https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${accessToken}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              env: CLOUD_ENV,
-              file_list: fileList.map(function (fid) {
-                return { fileid: fid, max_age: 7200 };
+        // 调用云开发 HTTP API 获取下载链接（单次最多 50 个，分批处理）
+        const allResults = [];
+        const batchSize = 50;
+        for (let i = 0; i < fileList.length; i += batchSize) {
+          const batch = fileList.slice(i, i + batchSize);
+          const tcbResp = await fetch(
+            `https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${accessToken}`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                env: CLOUD_ENV,
+                file_list: batch.map(function (fid) {
+                  return { fileid: fid, max_age: 7200 };
+                }),
               }),
-            }),
+            }
+          );
+          const tcbData = await tcbResp.json();
+          if (tcbData.errcode) {
+            console.error('batchdownloadfile 失败:', JSON.stringify(tcbData));
+            return json({ success: false, message: tcbData.errmsg || '获取下载链接失败', data: [] }, 500);
           }
-        );
-        const tcbData = await tcbResp.json();
-
-        if (tcbData.errcode) {
-          console.error('batchdownloadfile 失败:', JSON.stringify(tcbData));
-          return json({ success: false, message: tcbData.errmsg || '获取下载链接失败', data: [] }, 500);
+          allResults.push(...(tcbData.file_list || []));
         }
 
         // 组装返回结果（与 wx.cloud.getTempFileURL 格式一致）
-        const data = (tcbData.file_list || []).map(function (f) {
+        const data = allResults.map(function (f) {
           return {
             fileID: f.fileid,
             tempFileURL: f.download_url || '',
@@ -111,49 +129,6 @@ export default {
         return json({ success: true, data: data });
       } catch (err) {
         return json({ success: false, message: '服务器错误', data: [] }, 500);
-      }
-    }
-
-    // 诊断端点：测试 access_token + batchdownloadfile 各环节
-    if (url.pathname === '/api/diagnose' && request.method === 'POST') {
-      const result = { steps: [] };
-      try {
-        const { fileList } = await request.json();
-        const testFileIds = (fileList && fileList.length > 0) ? fileList : ['cloud://test.xxx'];
-
-        // 步骤1：获取 access_token
-        const token = await getAccessToken();
-        if (!token) {
-          result.steps.push({ step: '获取 access_token', status: 'FAIL', detail: '返回 null' });
-          return json({ success: false, message: 'access_token 获取失败', diagnose: result }, 500);
-        }
-        result.steps.push({ step: '获取 access_token', status: 'OK', tokenPrefix: token.substring(0, 10) + '...' });
-
-        // 步骤2：调用 batchdownloadfile
-        const tcbResp = await fetch(
-          `https://api.weixin.qq.com/tcb/batchdownloadfile?access_token=${token}`,
-          {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              env: CLOUD_ENV,
-              file_list: testFileIds.map(function (fid) {
-                return { fileid: fid, max_age: 7200 };
-              }),
-            }),
-          }
-        );
-        const tcbData = await tcbResp.json();
-        result.steps.push({
-          step: 'batchdownloadfile',
-          status: tcbData.errcode ? 'FAIL' : 'OK',
-          raw: tcbData,
-        });
-
-        return json({ success: !tcbData.errcode, diagnose: result });
-      } catch (err) {
-        result.steps.push({ step: '异常', status: 'FAIL', detail: err.message });
-        return json({ success: false, message: '诊断异常', diagnose: result }, 500);
       }
     }
 
