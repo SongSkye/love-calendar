@@ -18,17 +18,19 @@ var CATEGORIES = [
 ];
 
 // 预订状态选项（hasBooking=true 的分区共用）
+// 含"不设"(空值)：不是所有行程都需要预订状态，选不设则清空，卡片不显示角标
 var BOOKING_OPTIONS = [
   { value: 'pending', label: '待订' },
   { value: 'booked', label: '已订' },
+  { value: '', label: '不设' },
 ];
 
-// 把预订状态 value（booked/pending）转成 BOOKING_OPTIONS 索引，供 picker 回填
+// 把预订状态 value（booked/pending/''）转成 BOOKING_OPTIONS 索引，供 picker 回填
 function bookingValueToIndex(value) {
   for (var i = 0; i < BOOKING_OPTIONS.length; i++) {
     if (BOOKING_OPTIONS[i].value === value) return i;
   }
-  return 0; // 默认「待订」
+  return 2; // 默认「不设」
 }
 
 // 各分区弹窗表单字段配置：fieldKey / label / 类型(input单行/textarea多行自适应)
@@ -283,10 +285,10 @@ Page({
       });
       formData.day = String(maxDay + 1);
     }
-    // 有预订状态的分区，新增时默认「待订」
+    // 有预订状态的分区，新增时默认「不设」（不强制每条都挂预订状态，按需选）
     var catConfig = CATEGORIES.find(function (c) { return c.key === category; });
     if (catConfig && catConfig.hasBooking) {
-      formData.bookingStatus = 'pending';
+      formData.bookingStatus = '';
     }
     // 把 value 注入字段配置，避免 WXML 动态 key 绑定不刷新
     var editFields = FIELD_CONFIG[category].map(function (f) {
@@ -320,8 +322,9 @@ Page({
       var raw = item.fields[f.key];
       var v;
       if (f.type === 'booking') {
-        // booking 字段存的是 status 值（booked/pending），原样保留，不转 String 以免 'null'/'undefined'
-        v = raw || 'pending';
+        // booking 字段：有值保留（booked/pending），无值用空串表示"不设"
+        // 不能兜底 pending，否则编辑保存会把"不设"强制变回"待订"
+        v = raw || '';
       } else {
         v = raw != null ? String(raw) : '';
       }
@@ -414,9 +417,15 @@ Page({
     try {
       if (this.data.editingItem) {
         // 更新（走云函数，admin 权限，双方都能改）
+        // bookingStatus 为空（不设）时走 removeFields 通道显式删除，避免深度合并保留旧值
+        var updatePayload = { fields: fields };
+        if (fields.bookingStatus === '') {
+          delete fields.bookingStatus;
+          updatePayload = { removeFields: ['bookingStatus'], fields: fields };
+        }
         var updateRes = await wx.cloud.callFunction({
           name: 'updateTripItem',
-          data: { action: 'update', id: this.data.editingItem._id, data: { fields: fields } },
+          data: { action: 'update', id: this.data.editingItem._id, data: updatePayload },
         });
         if (!updateRes.result || !updateRes.result.success) {
           throw new Error(updateRes.result ? updateRes.result.message : '云函数返回异常');

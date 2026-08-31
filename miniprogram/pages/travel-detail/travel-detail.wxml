@@ -175,7 +175,7 @@
           bindinput="onFieldInput"
           auto-height
         ></textarea>
-        <!-- 预订状态用 picker 选择，待订/已订；bindchange 的 value 是索引，走 onBookingChange 转成 booked/pending -->
+        <!-- 预订状态用 picker 选择，待订/已订/不设；bindchange 的 value 是索引，走 onBookingChange 转成 booked/pending/'' -->
         <picker
           wx:elif="{{item.type === 'booking'}}"
           class="form-input booking-picker"
@@ -186,8 +186,8 @@
           data-key="{{item.key}}"
           bindchange="onBookingChange"
         >
-          <view class="booking-val {{item.value === 'booked' ? 'booked' : 'pending'}}">
-            {{item.value === 'booked' ? '✅ 已订' : '⬜ 待订'}}
+          <view class="booking-val {{item.value === 'booked' ? 'booked' : (item.value === 'pending' ? 'pending' : 'none')}}">
+            {{item.value === 'booked' ? '✅ 已订' : (item.value === 'pending' ? '⬜ 待订' : '🚫 不设')}}
           </view>
         </picker>
         <input

@@ -485,6 +485,10 @@ textarea.form-input {
   color: #FA8C16;
   background: #FFF7E6;
 }
+.booking-val.none {
+  color: #999;
+  background: #F5F5F5;
+}
 
 .modal-actions {
   display: flex;
