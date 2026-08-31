@@ -526,17 +526,21 @@ Page({
       this.closeBookingSelect();
       return;
     }
-    // 构造新 fields：清空时删除该字段，否则设值
+    // 构造新 fields：清空时走 removeFields 通道让云函数显式删除子字段
+    // （云数据库 update 对对象是深度合并，只删本地副本传上去删不掉旧值）
     var newFields = Object.assign({}, item.fields);
+    delete newFields.bookingStatus;
+    var payload;
     if (val === '') {
-      delete newFields.bookingStatus;
+      payload = { removeFields: ['bookingStatus'] };
     } else {
       newFields.bookingStatus = val;
+      payload = { fields: newFields };
     }
     wx.showLoading({ title: '更新中...', mask: true });
     wx.cloud.callFunction({
       name: 'updateTripItem',
-      data: { action: 'update', id: item._id, data: { fields: newFields } },
+      data: { action: 'update', id: item._id, data: payload },
       success: function (res) {
         wx.hideLoading();
         if (!res.result || !res.result.success) {

@@ -28,6 +28,15 @@ exports.main = async (event, context) => {
       // 更新明细（admin 权限，不限创建者）
       if (!id) return { success: false, message: '缺少 id' };
       const updateData = Object.assign({}, data, { updatedAt: new Date().toISOString() });
+      // 删除嵌套子字段：前端传 removeFields=['bookingStatus'] 表示删除 fields 下这些子字段
+      // 原因：云数据库 update 对对象是深度合并，不传的子字段会保留原值，
+      //       必须用 db.command.remove() 显式删除，否则"清空预订状态"等场景删不掉旧值
+      if (Array.isArray(updateData.removeFields)) {
+        const removeObj = {};
+        updateData.removeFields.forEach(function (k) { removeObj[k] = db.command.remove(); });
+        updateData.fields = Object.assign({}, updateData.fields || {}, removeObj);
+        delete updateData.removeFields;
+      }
       const res = await db.collection('trip_items').doc(id).update({ data: updateData });
       return { success: true, updated: res.stats.updated };
 
