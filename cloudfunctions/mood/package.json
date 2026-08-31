@@ -1,9 +1,0 @@
-{
-  "name": "mood",
-  "version": "1.0.0",
-  "description": "心情云函数：记录心情、获取月份心情",
-  "main": "index.js",
-  "dependencies": {
-    "wx-server-sdk": "latest"
-  }
-}
