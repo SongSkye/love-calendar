@@ -75,7 +75,10 @@ Page({
       this.setData({ anniversary: enriched });
 
       // 封面图转临时链接
+      // 保留原始 cloud:// fileID，删除纪念日时 deleteFile 只认 cloud:// ID，
+      // 转成 https 临时链接后就删不掉云存储原文件了
       if (enriched.coverImage && enriched.coverImage.indexOf('cloud://') === 0) {
+        enriched.coverFileId = enriched.coverImage;
         util.convertCloudFileIDs([enriched.coverImage]).then(function (urlMap) {
           if (urlMap[enriched.coverImage]) {
             enriched.coverImage = urlMap[enriched.coverImage];
@@ -182,9 +185,11 @@ Page({
           try {
             var db = app.getDb();
             var id = that.data.anniversaryId;
-            // 删除封面图
-            if (that.data.anniversary.coverImage) {
-              wx.cloud.deleteFile({ fileList: [that.data.anniversary.coverImage] }).catch(function () {});
+            // 删除封面图：优先用原始 cloud:// fileID（deleteFile 只认这个，
+            // coverImage 已被转成 https 临时链接，删不掉云存储原文件）
+            var coverFileId = that.data.anniversary.coverFileId;
+            if (coverFileId) {
+              wx.cloud.deleteFile({ fileList: [coverFileId] }).catch(function () {});
             }
             // 删除历史记录中的图片
             var recordsRes = await db.collection('anniversary_records').where({ anniversaryId: id }).get();

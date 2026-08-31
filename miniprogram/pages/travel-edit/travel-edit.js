@@ -80,7 +80,10 @@ Page({
           tips: t.tips || [],
         });
         // 封面图转临时链接
+        // 保留原始 cloud:// fileID，换封面时 deleteFile 只认 cloud:// ID，
+        // 转成 https 临时链接后就删不掉云存储原文件了
         if (t.coverImage && t.coverImage.indexOf('cloud://') === 0) {
+          this.setData({ coverFileId: t.coverImage });
           util.convertCloudFileIDs([t.coverImage]).then(function (urlMap) {
             if (urlMap[t.coverImage]) {
               this.setData({ coverImage: urlMap[t.coverImage] });
@@ -173,11 +176,13 @@ Page({
             console.warn('生成缩略图失败:', e);
           });
           wx.hideLoading();
-          // 删除旧封面
-          if (that.data.coverImage && that.data.coverImage.indexOf('cloud://') === 0) {
-            wx.cloud.deleteFile({ fileList: [that.data.coverImage] }).catch(function () {});
+          // 删除旧封面：优先用原始 cloud:// fileID（deleteFile 只认这个，
+          // coverImage 已被转成 https 临时链接，删不掉云存储原文件）
+          var oldFileId = that.data.coverFileId;
+          if (oldFileId) {
+            wx.cloud.deleteFile({ fileList: [oldFileId] }).catch(function () {});
           }
-          that.setData({ coverImage: uploadRes.fileID });
+          that.setData({ coverImage: uploadRes.fileID, coverFileId: uploadRes.fileID });
         }).catch(function () {
           wx.hideLoading();
           wx.showToast({ title: '上传失败', icon: 'none' });

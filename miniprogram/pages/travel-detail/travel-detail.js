@@ -1,5 +1,5 @@
 /**
- * 旅行详情页 - 基本信息 + 5 个 tab 分区明细
+ * 旅行详情页 - 基本信息 + 4 个 tab 分区明细（行程/住宿/餐厅/门票）
  * 支持查看、弹窗内联编辑/新增/删除明细，编辑/删除旅行
  * 出行准备清单已移至旅行列表页（travel），此处不再展示
  * 模式照抄 anniversary-detail 的 loadDetail + gacha-collection 的 tab 切换
@@ -155,7 +155,10 @@ Page({
       this.setData({ trip: trip });
 
       // 封面图转换（照抄 anniversary-detail 模式）
+      // 保留原始 cloud:// fileID，删除旅行时 deleteFile 只认 cloud:// ID，
+      // 转成 https 临时链接后就删不掉云存储原文件了
       if (trip.coverImage && trip.coverImage.indexOf('cloud://') === 0) {
+        trip.coverFileId = trip.coverImage;
         util.convertCloudFileIDs([trip.coverImage]).then(function (urlMap) {
           if (urlMap[trip.coverImage]) {
             trip.coverImage = urlMap[trip.coverImage];
@@ -360,8 +363,8 @@ Page({
   },
 
   /**
-   * 预订状态 picker 选中：bindchange 的 e.detail.value 是选中项索引（0/1），
-   * 需转成实际 value（booked/pending）再存，否则存进去是数字导致显示异常
+   * 预订状态 picker 选中：bindchange 的 e.detail.value 是选中项索引（0/1/2），
+   * 需转成实际 value（booked/pending/''）再存，否则存进去是数字导致显示异常
    * 同时更新 valueIndex 供 picker 回填
    */
   onBookingChange: function (e) {
@@ -589,9 +592,11 @@ Page({
         try {
           wx.showLoading({ title: '删除中...' });
           var id = that.data.tripId;
-          // 删除封面图
-          if (that.data.trip.coverImage) {
-            wx.cloud.deleteFile({ fileList: [that.data.trip.coverImage] }).catch(function () {});
+          // 删除封面图：优先用原始 cloud:// fileID（deleteFile 只认这个，
+          // coverImage 已被转成 https 临时链接，删不掉云存储原文件）
+          var coverFileId = that.data.trip.coverFileId;
+          if (coverFileId) {
+            wx.cloud.deleteFile({ fileList: [coverFileId] }).catch(function () {});
           }
           // 走云函数级联删除（admin 权限，双方都能删）
           var delRes = await wx.cloud.callFunction({
