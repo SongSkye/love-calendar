@@ -257,12 +257,11 @@ App({
       if (partner) {
         app.globalData.partnerInfo = partner;
       }
-      return db.collection('anniversaries').where({
-        coupleId: user.coupleId
-      }).orderBy('date', 'asc').get().then(function (anniRes) {
-        app.globalData.anniversariesCache = anniRes.data;
-        if (anniRes.data.length > 0) {
-          app.globalData.togetherDate = anniRes.data[0].date;
+      // 分页取全部纪念日（默认 .get() 只返 20 条，纪念日多了启动缓存会丢）
+      return fetchAllAnniversaries(db, user.coupleId).then(function (anniList) {
+        app.globalData.anniversariesCache = anniList;
+        if (anniList.length > 0) {
+          app.globalData.togetherDate = anniList[0].date;
         }
         // 后台刷新后更新缓存
         app.saveToCache();
@@ -271,3 +270,30 @@ App({
     });
   },
 });
+
+/**
+ * 分页取出某空间全部纪念日（按日期升序）
+ * 云数据库 .get() 默认只返 20 条，纪念日多了会丢，循环分页取全部
+ * app.js 启动最早执行，不能依赖 utils/util.js（util 内部用 getApp），故内联
+ */
+function fetchAllAnniversaries(db, coupleId) {
+  var all = [];
+  var pageSize = 20;
+  var skip = 0;
+  function next() {
+    return db.collection('anniversaries')
+      .where({ coupleId: coupleId })
+      .orderBy('date', 'asc')
+      .skip(skip)
+      .limit(pageSize)
+      .get()
+      .then(function (res) {
+        all = all.concat(res.data);
+        if (res.data.length < pageSize) return all;
+        skip += pageSize;
+        if (skip > 1000) return all; // 安全上限
+        return next();
+      });
+  }
+  return next();
+}
