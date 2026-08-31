@@ -161,7 +161,8 @@ Page({
       wx.showToast({ title: '已保存', icon: 'success' });
     } catch (err) {
       console.error('保存准备清单失败:', err);
-      wx.showToast({ title: '保存失败', icon: 'none' });
+      var msg = (err && err.message) || '保存失败';
+      wx.showToast({ title: msg, icon: 'none' });
     } finally {
       this.setData({ packingSaving: false });
     }

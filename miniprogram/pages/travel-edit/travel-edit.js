@@ -251,7 +251,8 @@ Page({
       }
     } catch (err) {
       console.error('保存旅行失败:', err);
-      wx.showToast({ title: '保存失败', icon: 'none' });
+      var msg = (err && err.message) || '保存失败';
+      wx.showToast({ title: msg, icon: 'none' });
     } finally {
       this.setData({ saving: false });
     }

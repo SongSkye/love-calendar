@@ -473,7 +473,9 @@ Page({
       this.loadDetail();
     } catch (err) {
       console.error('保存明细失败:', err);
-      wx.showToast({ title: '保存失败', icon: 'none' });
+      // 显示云函数返回的具体原因（如"无权操作此空间数据""未获取到用户身份"）
+      var msg = (err && err.message) || '保存失败';
+      wx.showToast({ title: msg, icon: 'none' });
     } finally {
       this.setData({ saving: false });
     }
@@ -504,7 +506,8 @@ Page({
           that.loadDetail();
         } catch (err) {
           console.error('删除明细失败:', err);
-          wx.showToast({ title: '删除失败', icon: 'none' });
+          var msg = (err && err.message) || '删除失败';
+          wx.showToast({ title: msg, icon: 'none' });
         }
       },
     });
@@ -612,7 +615,8 @@ Page({
         } catch (err) {
           wx.hideLoading();
           console.error('删除旅行失败:', err);
-          wx.showToast({ title: '删除失败', icon: 'none' });
+          var msg = (err && err.message) || '删除失败';
+          wx.showToast({ title: msg, icon: 'none' });
         }
       },
     });
